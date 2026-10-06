@@ -7,11 +7,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,6 +58,23 @@ fun CreateMasterPasswordScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        Surface(
+            color = MaterialTheme.colorScheme.primaryContainer,
+            shape = CircleShape,
+            modifier = Modifier.size(72.dp),
+        ) {
+            androidx.compose.foundation.layout.Box(
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Filled.Shield,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(36.dp),
+                )
+            }
+        }
+        Spacer(Modifier.height(16.dp))
         Text("Create Master Password", style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(8.dp))
         Text(
@@ -65,15 +91,33 @@ fun CreateMasterPasswordScreen(
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(8.dp))
+        FilledTonalButton(
+            onClick = {
+                val generated = viewModel.generatePassword()
+                password = generated
+                confirm = generated
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(Icons.Filled.Refresh, contentDescription = null)
+            Spacer(Modifier.height(0.dp))
+            Text("Generate a strong password")
+        }
+        Spacer(Modifier.height(8.dp))
         strength?.let {
             Text(
                 "Strength: ${it.label}",
                 style = MaterialTheme.typography.bodySmall,
                 color = when (it.score) {
                     0, 1 -> MaterialTheme.colorScheme.error
-                    2 -> MaterialTheme.colorScheme.tertiary
-                    else -> MaterialTheme.colorScheme.primary
+                    2 -> MaterialTheme.colorScheme.secondary
+                    else -> MaterialTheme.colorScheme.tertiary
                 },
+            )
+            Spacer(Modifier.height(4.dp))
+            LinearProgressIndicator(
+                progress = { (it.score + 1) / 5f },
+                modifier = Modifier.fillMaxWidth(),
             )
         }
         Spacer(Modifier.height(16.dp))

@@ -14,20 +14,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.passwordvault.domain.model.VaultEntry
+import com.example.passwordvault.ui.components.PassVaultTopBar
 import com.example.passwordvault.ui.settings.SettingsViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -68,13 +67,9 @@ fun EntryDetailsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(entry?.title ?: "Details") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
+            PassVaultTopBar(
+                title = entry?.title ?: "Details",
+                onBack = onBack,
                 actions = {
                     IconButton(onClick = onEdit) {
                         Icon(Icons.Filled.Edit, contentDescription = "Edit")
@@ -106,13 +101,22 @@ fun EntryDetailsScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                DetailField("Account name", e.name)
-                DetailField("Username", e.username)
-                DetailField("URL", e.url)
-                DetailField("Category", e.category)
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        DetailField("Account name", e.name)
+                        DetailField("Username", e.username)
+                        DetailField("URL", e.url)
+                        DetailField("Category", e.category)
+                    }
+                }
 
-                Text("Password", style = MaterialTheme.typography.labelMedium)
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Password", style = MaterialTheme.typography.labelMedium)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = if (revealPassword) e.password else "••••••••••••",
                         style = MaterialTheme.typography.bodyLarge,
@@ -134,10 +138,16 @@ fun EntryDetailsScreen(
                     }) {
                         Icon(Icons.Filled.ContentCopy, contentDescription = "Copy password")
                     }
+                        }
+                    }
                 }
 
                 if (e.notes.isNotBlank()) {
-                    DetailField("Notes", e.notes)
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            DetailField("Notes", e.notes)
+                        }
+                    }
                 }
             }
         }

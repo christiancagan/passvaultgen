@@ -9,6 +9,8 @@ import com.example.passwordvault.domain.usecase.LockVaultUseCase
 import com.example.passwordvault.domain.usecase.UnlockVaultUseCase
 import com.example.passwordvault.security.biometric.BiometricManager
 import com.example.passwordvault.security.crypto.VaultSession
+import com.example.passwordvault.security.password.PasswordGenerator
+import com.example.passwordvault.security.password.PasswordOptions
 import com.example.passwordvault.ui.biometric.BiometricAuthenticator
 import com.example.passwordvault.util.SecureLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -40,6 +42,7 @@ class AuthViewModel @Inject constructor(
     private val lockVault: LockVaultUseCase,
     private val biometricManager: BiometricManager,
     private val attemptStore: AuthAttemptStore,
+    private val passwordGenerator: PasswordGenerator,
 ) : ViewModel() {
 
     val hasVault: StateFlow<Boolean?> = metadataStore.metadata
@@ -109,6 +112,9 @@ class AuthViewModel @Inject constructor(
     }
 
     fun lock() = lockVault()
+
+    /** Strong 20-character password for the "generate" button on vault creation. */
+    fun generatePassword(): String = passwordGenerator.generate(PasswordOptions())
 
     fun unlockWithBiometrics(activity: FragmentActivity, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {

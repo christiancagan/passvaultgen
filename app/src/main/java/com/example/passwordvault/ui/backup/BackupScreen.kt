@@ -11,13 +11,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.passwordvault.security.backup.VaultBackupCodec
+import com.example.passwordvault.ui.components.PassVaultTopBar
 import com.example.passwordvault.ui.components.SecurePasswordField
 import com.example.passwordvault.util.SecureLogger
 import kotlinx.coroutines.Dispatchers
@@ -86,12 +87,7 @@ fun BackupScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Backup & restore") },
-                navigationIcon = {
-                    androidx.compose.material3.TextButton(onClick = onBack) { Text("Back") }
-                },
-            )
+            PassVaultTopBar(title = "Backup & restore", onBack = onBack)
         },
     ) { padding ->
         Column(
@@ -101,11 +97,14 @@ fun BackupScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(
-                "Backups are encrypted with your master password. " +
-                    "Restoring replaces all current entries.",
-                style = MaterialTheme.typography.bodyMedium,
-            )
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    "Backups are encrypted with your master password. " +
+                        "Restoring replaces all current entries.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(16.dp),
+                )
+            }
 
             uiState.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             uiState.message?.let { Text(it, color = MaterialTheme.colorScheme.primary) }

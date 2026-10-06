@@ -6,11 +6,14 @@ import androidx.fragment.app.FragmentActivity
 import com.example.passwordvault.data.repository.AppSettings
 import com.example.passwordvault.data.repository.AuthAttemptStore
 import com.example.passwordvault.data.repository.SettingsStore
+import com.example.passwordvault.data.repository.ThemeMode
 import com.example.passwordvault.data.repository.VaultMetadataStore
 import com.example.passwordvault.data.repository.VaultRepository
 import com.example.passwordvault.domain.usecase.ChangeMasterPasswordUseCase
 import com.example.passwordvault.domain.usecase.LockVaultUseCase
 import com.example.passwordvault.security.biometric.BiometricManager
+import com.example.passwordvault.security.password.PasswordGenerator
+import com.example.passwordvault.security.password.PasswordOptions
 import com.example.passwordvault.ui.biometric.BiometricAuthenticator
 import com.example.passwordvault.util.SecureLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,6 +36,7 @@ class SettingsViewModel @Inject constructor(
     private val repository: VaultRepository,
     private val lockVault: LockVaultUseCase,
     private val attemptStore: AuthAttemptStore,
+    private val passwordGenerator: PasswordGenerator,
 ) : ViewModel() {
 
     val settings: StateFlow<AppSettings> =
@@ -48,6 +52,13 @@ class SettingsViewModel @Inject constructor(
     fun setClipboardTimeoutSeconds(seconds: Int) {
         viewModelScope.launch { settingsStore.setClipboardTimeoutSeconds(seconds) }
     }
+
+    fun setThemeMode(mode: ThemeMode) {
+        viewModelScope.launch { settingsStore.setThemeMode(mode) }
+    }
+
+    /** Strong 20-character password for "generate" buttons. */
+    fun generatePassword(): String = passwordGenerator.generate(PasswordOptions())
 
     fun setBiometricEnabled(enabled: Boolean, activity: FragmentActivity? = null, onResult: (Boolean) -> Unit = {}) {        if (enabled) {
             enableBiometrics(activity, onResult)

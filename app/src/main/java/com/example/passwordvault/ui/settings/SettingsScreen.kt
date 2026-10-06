@@ -12,9 +12,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -22,7 +25,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,8 +39,9 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.passwordvault.ui.components.PassVaultTopBar
+import com.example.passwordvault.ui.components.ThemeModeSelector
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
@@ -62,97 +66,116 @@ fun SettingsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Settings") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-            )
+            PassVaultTopBar(title = "Settings", onBack = onBack)
         },
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            SettingToggle(
-                label = "Auto-lock on background",
-                checked = settings.autoLockEnabled,
-                onCheckedChange = viewModel::setAutoLockEnabled,
-            )
-            SettingToggle(
-                label = "Biometric unlock",
-                checked = settings.biometricEnabled,
-                onCheckedChange = { enabled ->
-                    viewModel.setBiometricEnabled(enabled, activity)
-                },
-            )
-            OutlinedButton(onClick = onBackup, modifier = Modifier.fillMaxWidth()) {
-                Text("Backup & restore")
-            }
-            OutlinedButton(onClick = onChangePassword, modifier = Modifier.fillMaxWidth()) {
-                Text("Change master password")
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+            SettingsSection(title = "Appearance") {
                 Text(
-                    "Autofill service: ${if (autofillEnabled) "on" else "off"}",
+                    "Theme",
                     style = MaterialTheme.typography.bodyMedium,
                 )
-                if (!autofillEnabled) {
-                    androidx.compose.material3.TextButton(
-                        onClick = {
-                            val intent = Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE).apply {
-                                data = android.net.Uri.parse("package:${context.packageName}")
-                            }
-                            autofillLauncher.launch(intent)
-                        },
-                    ) { Text("Enable") }
+                ThemeModeSelector(
+                    selected = settings.themeMode,
+                    onSelect = viewModel::setThemeMode,
+                )
+            }
+
+            SettingsSection(title = "Security") {
+                SettingToggle(
+                    label = "Auto-lock on background",
+                    checked = settings.autoLockEnabled,
+                    onCheckedChange = viewModel::setAutoLockEnabled,
+                )
+                SettingToggle(
+                    label = "Biometric unlock",
+                    checked = settings.biometricEnabled,
+                    onCheckedChange = { enabled ->
+                        viewModel.setBiometricEnabled(enabled, activity)
+                    },
+                )
+                OutlinedButton(onClick = onChangePassword, modifier = Modifier.fillMaxWidth()) {
+                    Text("Change master password")
                 }
             }
-            OutlinedButton(
-                onClick = { confirmDelete = true },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text("Delete vault & all entries", color = MaterialTheme.colorScheme.error)
+
+            SettingsSection(title = "Data") {
+                OutlinedButton(onClick = onBackup, modifier = Modifier.fillMaxWidth()) {
+                    Text("Backup & restore")
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "Autofill service: ${if (autofillEnabled) "on" else "off"}",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    if (!autofillEnabled) {
+                        TextButton(
+                            onClick = {
+                                val intent = Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE).apply {
+                                    data = android.net.Uri.parse("package:${context.packageName}")
+                                }
+                                autofillLauncher.launch(intent)
+                            },
+                        ) { Text("Enable") }
+                    }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "Clipboard auto-clear: ${settings.clipboardTimeoutSeconds}s",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            onClick = {
+                                viewModel.setClipboardTimeoutSeconds(
+                                    (settings.clipboardTimeoutSeconds - 5).coerceAtLeast(5),
+                                )
+                            },
+                        ) {
+                            Icon(Icons.Filled.Remove, contentDescription = "Decrease timeout")
+                        }
+                        IconButton(
+                            onClick = {
+                                viewModel.setClipboardTimeoutSeconds(
+                                    (settings.clipboardTimeoutSeconds + 5).coerceAtMost(120),
+                                )
+                            },
+                        ) {
+                            Icon(Icons.Filled.Add, contentDescription = "Increase timeout")
+                        }
+                    }
+                }
             }
+
+            SettingsSection(title = "Danger zone") {
+                OutlinedButton(
+                    onClick = { confirmDelete = true },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Delete vault & all entries", color = MaterialTheme.colorScheme.error)
+                }
+            }
+
             actionError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    "Clipboard auto-clear: ${settings.clipboardTimeoutSeconds}s",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
-                        onClick = {
-                            viewModel.setClipboardTimeoutSeconds(
-                                (settings.clipboardTimeoutSeconds - 5).coerceAtLeast(5),
-                            )
-                        },
-                    ) { Text("−") }
-                    IconButton(
-                        onClick = {
-                            viewModel.setClipboardTimeoutSeconds(
-                                (settings.clipboardTimeoutSeconds + 5).coerceAtMost(120),
-                            )
-                        },
-                    ) { Text("+") }
-                }
-            }
             Text(
                 "Screenshots are disabled app-wide. No analytics. No cloud sync. Your data never leaves this device.",
                 style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -169,7 +192,7 @@ fun SettingsScreen(
                 )
             },
             confirmButton = {
-                androidx.compose.material3.TextButton(
+                TextButton(
                     onClick = {
                         confirmDelete = false
                         viewModel.deleteVault(onVaultDeleted)
@@ -177,7 +200,7 @@ fun SettingsScreen(
                 ) { Text("Delete everything", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
-                androidx.compose.material3.TextButton(onClick = { confirmDelete = false }) {
+                TextButton(onClick = { confirmDelete = false }) {
                     Text("Cancel")
                 }
             },
@@ -186,7 +209,28 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun SettingToggle(    label: String,
+private fun SettingsSection(
+    title: String,
+    content: @Composable () -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                title,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            content()
+        }
+    }
+}
+
+@Composable
+private fun SettingToggle(
+    label: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
 ) {

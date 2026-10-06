@@ -4,8 +4,10 @@ import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 
 private val Context.settingsDataStore by preferencesDataStore(name = "settings")
@@ -14,6 +16,7 @@ data class AppSettings(
     val autoLockEnabled: Boolean = true,
     val clipboardTimeoutSeconds: Int = 30,
     val biometricEnabled: Boolean = false,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
 )
 
 /**
@@ -25,15 +28,21 @@ class SettingsStore(private val context: Context) {
         val autoLockEnabled = booleanPreferencesKey("auto_lock_enabled")
         val clipboardTimeoutSeconds = intPreferencesKey("clipboard_timeout_seconds")
         val biometricEnabled = booleanPreferencesKey("biometric_enabled")
+        val themeMode = stringPreferencesKey("theme_mode")
     }
 
-    val settings: Flow<AppSettings> = context.settingsDataStore.data.map { prefs ->
-        AppSettings(
-            autoLockEnabled = prefs[Keys.autoLockEnabled] ?: true,
-            clipboardTimeoutSeconds = prefs[Keys.clipboardTimeoutSeconds] ?: 30,
-            biometricEnabled = prefs[Keys.biometricEnabled] ?: false,
-        )
-    }
+    val settings: Flow<AppSettings> = context.settingsDataStore.data
+        .catch { emit(androidx.datastore.preferences.core.emptyPreferences()) }
+        .map { prefs ->
+            AppSettings(
+                autoLockEnabled = prefs[Keys.autoLockEnabled] ?: true,
+                clipboardTimeoutSeconds = prefs[Keys.clipboardTimeoutSeconds] ?: 30,
+                biometricEnabled = prefs[Keys.biometricEnabled] ?: false,
+                themeMode = prefs[Keys.themeMode]?.let {
+                    runCatching { ThemeMode.valueOf(it) }.getOrDefault(ThemeMode.SYSTEM)
+                } ?: ThemeMode.SYSTEM,
+            )
+        }
 
     suspend fun setAutoLockEnabled(enabled: Boolean) {
         context.settingsDataStore.edit { it[Keys.autoLockEnabled] = enabled }
@@ -45,5 +54,9 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setBiometricEnabled(enabled: Boolean) {
         context.settingsDataStore.edit { it[Keys.biometricEnabled] = enabled }
+    }
+
+    suspend fun setThemeMode(mode: ThemeMode) {
+        context.settingsDataStore.edit { it[Keys.themeMode] = mode.name }
     }
 }
