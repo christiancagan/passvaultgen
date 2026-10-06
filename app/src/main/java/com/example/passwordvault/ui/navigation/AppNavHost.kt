@@ -20,14 +20,13 @@ import com.example.passwordvault.ui.auth.CreateMasterPasswordScreen
 import com.example.passwordvault.ui.auth.UnlockScreen
 import com.example.passwordvault.ui.auth.WelcomeScreen
 import com.example.passwordvault.ui.backup.BackupScreen
-import com.example.passwordvault.ui.dashboard.SecurityDashboardScreen
 import com.example.passwordvault.ui.generator.GeneratorScreen
+import com.example.passwordvault.ui.home.HomeScreen
 import com.example.passwordvault.ui.settings.ChangePasswordScreen
 import com.example.passwordvault.ui.settings.SettingsScreen
 import com.example.passwordvault.ui.settings.SettingsViewModel
 import com.example.passwordvault.ui.vault.AddEditEntryScreen
 import com.example.passwordvault.ui.vault.EntryDetailsScreen
-import com.example.passwordvault.ui.vault.VaultHomeScreen
 
 object Routes {
     const val WELCOME = "welcome"
@@ -39,7 +38,6 @@ object Routes {
     const val DETAILS = "details/{id}"
     const val GENERATOR = "generator"
     const val SETTINGS = "settings"
-    const val DASHBOARD = "dashboard"
     const val BACKUP = "backup"
     const val CHANGE_PASSWORD = "change_password"
 
@@ -99,13 +97,11 @@ fun AppNavHost() {
             )
         }
         composable(Routes.HOME) {
-            VaultHomeScreen(
+            HomeScreen(
                 onAdd = { navController.navigate(Routes.ADD) },
-                onEdit = { id -> navController.navigate(Routes.edit(id)) },
                 onDetails = { id -> navController.navigate(Routes.details(id)) },
                 onGenerator = { navController.navigate(Routes.GENERATOR) },
                 onSettings = { navController.navigate(Routes.SETTINGS) },
-                onDashboard = { navController.navigate(Routes.DASHBOARD) },
                 onLock = { authViewModel.lock() },
             )
         }
@@ -155,9 +151,6 @@ fun AppNavHost() {
         }
         composable(Routes.BACKUP) {
             BackupScreen(onBack = { navController.popBackStack() })
-        }
-        composable(Routes.DASHBOARD) {
-            SecurityDashboardScreen(onBack = { navController.popBackStack() })
         }
     }
 

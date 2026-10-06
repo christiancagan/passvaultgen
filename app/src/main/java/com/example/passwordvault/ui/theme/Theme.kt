@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import com.example.passwordvault.data.repository.ThemeMode
 
@@ -29,8 +30,13 @@ private val LightColors = lightColorScheme(
     onSurface = Color(0xFF171C26),
     surfaceVariant = Color(0xFFE1E7F2),
     onSurfaceVariant = Color(0xFF424B5C),
-    surfaceContainerHighest = Color(0xFFE7ECF5),
+    surfaceContainerLowest = Color(0xFFFFFFFF),
+    surfaceContainerLow = Color(0xFFEFF3FA),
+    surfaceContainer = Color(0xFFE9EEF7),
+    surfaceContainerHigh = Color(0xFFE3E9F4),
+    surfaceContainerHighest = Color(0xFFDDE4F0),
     outline = Color(0xFF737D90),
+    outlineVariant = Color(0xFFC2C9D8),
 )
 
 private val DarkColors = darkColorScheme(
@@ -54,8 +60,13 @@ private val DarkColors = darkColorScheme(
     onSurface = Color(0xFFE2E7F2),
     surfaceVariant = Color(0xFF1B2436),
     onSurfaceVariant = Color(0xFFC2C9D8),
+    surfaceContainerLowest = Color(0xFF030710),
+    surfaceContainerLow = Color(0xFF0A1222),
+    surfaceContainer = Color(0xFF101A2E),
+    surfaceContainerHigh = Color(0xFF18233A),
     surfaceContainerHighest = Color(0xFF222D44),
     outline = Color(0xFF8C96AB),
+    outlineVariant = Color(0xFF35415A),
 )
 
 /**
@@ -76,4 +87,14 @@ fun PassVaultTheme(
         colorScheme = if (darkTheme) DarkColors else LightColors,
         content = content,
     )
+}
+
+/**
+ * Signature brand gradient (deep blue to slate blue) for hero panels.
+ * Reads the active color scheme, so it adapts to light and dark mode.
+ */
+@Composable
+fun brandGradient(): Brush {
+    val scheme = MaterialTheme.colorScheme
+    return Brush.horizontalGradient(listOf(scheme.primary, scheme.secondary))
 }

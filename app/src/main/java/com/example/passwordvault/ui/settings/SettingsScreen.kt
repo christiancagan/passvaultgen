@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -77,7 +78,10 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            SettingsSection(title = "Appearance") {
+            SettingsSection(
+                title = "Appearance",
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+            ) {
                 Text(
                     "Theme",
                     style = MaterialTheme.typography.bodyMedium,
@@ -162,7 +166,10 @@ fun SettingsScreen(
                 }
             }
 
-            SettingsSection(title = "Danger zone") {
+            SettingsSection(
+                title = "Danger zone",
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+            ) {
                 OutlinedButton(
                     onClick = { confirmDelete = true },
                     modifier = Modifier.fillMaxWidth(),
@@ -211,9 +218,13 @@ fun SettingsScreen(
 @Composable
 private fun SettingsSection(
     title: String,
+    containerColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.surfaceContainerHigh,
     content: @Composable () -> Unit,
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+    ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),

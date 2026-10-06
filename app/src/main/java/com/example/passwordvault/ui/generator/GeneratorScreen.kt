@@ -17,6 +17,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -102,36 +104,48 @@ fun GeneratorScreen(
                 }
             }
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(
-                    checked = uiState.passphraseMode,
-                    onCheckedChange = { viewModel.setPassphraseMode(it) },
-                )
-                Text("Passphrase mode")
-            }
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                ),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = uiState.passphraseMode,
+                            onCheckedChange = { viewModel.setPassphraseMode(it) },
+                        )
+                        Text("Passphrase mode")
+                    }
 
-            if (uiState.passphraseMode) {
-                Text("Word count: ${uiState.wordCount}")
-                Slider(
-                    value = uiState.wordCount.toFloat(),
-                    onValueChange = { viewModel.setWordCount(it.roundToInt()) },
-                    valueRange = 3f..10f,
-                    steps = 6,
-                )
-            } else {
-                Text("Length: ${uiState.options.length}")
-                Slider(
-                    value = uiState.options.length.toFloat(),
-                    onValueChange = { viewModel.updateOptions(uiState.options.copy(length = it.roundToInt())) },
-                    valueRange = 8f..64f,
-                    steps = 55,
-                )
-                val o = uiState.options
-                OptionCheckbox("Uppercase", o.includeUppercase) { viewModel.updateOptions(o.copy(includeUppercase = it)) }
-                OptionCheckbox("Lowercase", o.includeLowercase) { viewModel.updateOptions(o.copy(includeLowercase = it)) }
-                OptionCheckbox("Numbers", o.includeNumbers) { viewModel.updateOptions(o.copy(includeNumbers = it)) }
-                OptionCheckbox("Symbols", o.includeSymbols) { viewModel.updateOptions(o.copy(includeSymbols = it)) }
-                OptionCheckbox("Exclude ambiguous", o.excludeAmbiguous) { viewModel.updateOptions(o.copy(excludeAmbiguous = it)) }
+                    if (uiState.passphraseMode) {
+                        Text("Word count: ${uiState.wordCount}")
+                        Slider(
+                            value = uiState.wordCount.toFloat(),
+                            onValueChange = { viewModel.setWordCount(it.roundToInt()) },
+                            valueRange = 3f..10f,
+                            steps = 6,
+                        )
+                    } else {
+                        Text("Length: ${uiState.options.length}")
+                        Slider(
+                            value = uiState.options.length.toFloat(),
+                            onValueChange = { viewModel.updateOptions(uiState.options.copy(length = it.roundToInt())) },
+                            valueRange = 8f..64f,
+                            steps = 55,
+                        )
+                        val o = uiState.options
+                        OptionCheckbox("Uppercase", o.includeUppercase) { viewModel.updateOptions(o.copy(includeUppercase = it)) }
+                        OptionCheckbox("Lowercase", o.includeLowercase) { viewModel.updateOptions(o.copy(includeLowercase = it)) }
+                        OptionCheckbox("Numbers", o.includeNumbers) { viewModel.updateOptions(o.copy(includeNumbers = it)) }
+                        OptionCheckbox("Symbols", o.includeSymbols) { viewModel.updateOptions(o.copy(includeSymbols = it)) }
+                        OptionCheckbox("Exclude ambiguous", o.excludeAmbiguous) { viewModel.updateOptions(o.copy(excludeAmbiguous = it)) }
+                    }
+                }
             }
         }
     }

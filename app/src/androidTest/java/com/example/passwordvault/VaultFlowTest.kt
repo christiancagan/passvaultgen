@@ -32,7 +32,8 @@ class VaultFlowTest {
     @Test
     fun createVault_reachesHome() {
         createVault(password)
-        waitForText("Vault", 180_000)
+        waitForText("Security Dashboard", 180_000)
+        goToVaultTab()
         compose.onNodeWithText("No credentials yet.", substring = true).assertExists()
     }
 
@@ -40,6 +41,7 @@ class VaultFlowTest {
     fun addEntry_appearsInList() {
         createVault(password)
         waitForText("Vault", 180_000)
+        goToVaultTab()
 
         compose.onNodeWithContentDescription("Add credential").performClick()
         waitForText("Add Credential", 10_000)
@@ -57,6 +59,7 @@ class VaultFlowTest {
     fun lockThenUnlock_returnsToHome() {
         createVault(password)
         waitForText("Vault", 180_000)
+        goToVaultTab()
 
         compose.onNodeWithContentDescription("Lock vault").performClick()
         waitForText("Unlock Vault", 10_000)
@@ -69,6 +72,7 @@ class VaultFlowTest {
     fun wrongPasswords_triggerLockoutMessage() {
         createVault(password)
         waitForText("Vault", 180_000)
+        goToVaultTab()
 
         compose.onNodeWithContentDescription("Lock vault").performClick()
         waitForText("Unlock Vault", 10_000)
@@ -93,6 +97,12 @@ class VaultFlowTest {
     private fun unlockWith(pw: String) {
         setTextField(0, pw, clearFirst = true)
         compose.onNodeWithText("Unlock", substring = false).performClick()
+    }
+
+    /** Switches from the landing dashboard tab to the vault list tab. */
+    private fun goToVaultTab() {
+        compose.onNodeWithText("Vault").performClick()
+        waitForText("Search", 10_000)
     }
 
     /** Nth editable field on screen (composition order). */
