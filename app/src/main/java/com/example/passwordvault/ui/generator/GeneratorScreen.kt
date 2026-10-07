@@ -276,7 +276,7 @@ private fun OutputCard(
                     Text(
                         "Local only",
                         style = MaterialTheme.typography.labelLarge,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onPrimary,
                     )
                 }
             }

@@ -1,5 +1,6 @@
 package com.example.passwordvault.ui.theme
 
+import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -9,10 +10,14 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import com.example.passwordvault.data.repository.ThemeMode
 
 /** True when the brand dark palette is active; used by strength text colors. */
@@ -109,12 +114,34 @@ fun PassVaultTheme(
         else -> BrandLight
     }
     CompositionLocalProvider(LocalIsDark provides darkTheme) {
+        ApplyModeToWindow(darkTheme)
         MaterialTheme(
             colorScheme = colorScheme,
             typography = AppTypography,
             shapes = AppShapes,
             content = content,
         )
+    }
+}
+
+/**
+ * Keeps the window surface and system-bar icons in sync with the in-app mode
+ * (which may differ from the system setting when LIGHT/DARK is pinned): dark
+ * ink on light paper, light ink on dark navy.
+ */
+@Composable
+private fun ApplyModeToWindow(dark: Boolean) {
+    val context = LocalContext.current
+    val view = LocalView.current
+    LaunchedEffect(dark, view) {
+        val backdrop = if (dark) Color(0xFF0B1220) else Color(0xFFF2F6FC)
+        view.setBackgroundColor(backdrop.toArgb())
+        val window = (context as? Activity)?.window
+        if (window != null) {
+            val controller = WindowCompat.getInsetsController(window, view)
+            controller.isAppearanceLightStatusBars = !dark
+            controller.isAppearanceLightNavigationBars = !dark
+        }
     }
 }
 

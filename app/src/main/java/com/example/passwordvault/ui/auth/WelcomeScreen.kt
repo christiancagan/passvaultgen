@@ -68,7 +68,7 @@ fun WelcomeScreen(
                     Icon(
                         Icons.Filled.Lock,
                         contentDescription = null,
-                        tint = androidx.compose.ui.graphics.Color.White,
+                        tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(40.dp),
                     )
                 }
