@@ -2,6 +2,7 @@ package com.example.passwordvault.ui.vault
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -26,12 +26,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.passwordvault.domain.model.VaultEntryDraft
 import com.example.passwordvault.security.password.PasswordStrengthAnalyzer
+import com.example.passwordvault.ui.components.HapticSwitch
+import com.example.passwordvault.ui.components.PassVaultCard
 import com.example.passwordvault.ui.components.PassVaultTopBar
 import com.example.passwordvault.ui.components.SecurePasswordField
+import com.example.passwordvault.ui.components.StrengthMeter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,7 +68,14 @@ fun AddEditEntryScreen(
         }
     }
 
+    val strength = remember(password) {
+        if (password.isBlank()) null
+        else PasswordStrengthAnalyzer().analyze(password)
+    }
+
     Scaffold(
+        containerColor = Color.Transparent,
+        modifier = Modifier,
         topBar = {
             PassVaultTopBar(
                 title = if (entryId == null) "Add Credential" else "Edit Credential",
@@ -77,78 +88,96 @@ fun AddEditEntryScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                label = { Text("Title") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            OutlinedTextField(
-                value = category,
-                onValueChange = { category = it },
-                label = { Text("Category") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Account name") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            OutlinedTextField(
-                value = username,
-                onValueChange = { username = it },
-                label = { Text("Username") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            SecurePasswordField(
-                value = password,
-                onValueChange = { password = it },
-                label = "Password",
-                modifier = Modifier.fillMaxWidth(),
-                onGenerateClick = { password = viewModel.generatePassword() },
-            )
-            val strength = remember(password) {
-                if (password.isBlank()) null
-                else PasswordStrengthAnalyzer().analyze(password)
-            }
-            strength?.let {
-                Text(
-                    "Strength: ${it.label} — tap the generate button for a stronger one",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = when (it.score) {
-                        0, 1 -> MaterialTheme.colorScheme.error
-                        2 -> MaterialTheme.colorScheme.secondary
-                        else -> MaterialTheme.colorScheme.tertiary
-                    },
+            PassVaultCard(
+                title = "Identity",
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
+            ) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Title") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
                 )
+                OutlinedTextField(
+                    value = category,
+                    onValueChange = { category = it },
+                    label = { Text("Category") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Account name") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+                Spacer(Modifier.height(12.dp))
             }
-            OutlinedTextField(
-                value = url,
-                onValueChange = { url = it },
-                label = { Text("URL") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            OutlinedTextField(
-                value = notes,
-                onValueChange = { notes = it },
-                label = { Text("Notes") },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 3,
-            )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(checked = favorite, onCheckedChange = { favorite = it })
-                Text("Favorite", style = MaterialTheme.typography.bodyMedium)
+
+            PassVaultCard(
+                title = "Credentials",
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
+            ) {
+                OutlinedTextField(
+                    value = username,
+                    onValueChange = { username = it },
+                    label = { Text("Username") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+                SecurePasswordField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = "Password",
+                    modifier = Modifier.fillMaxWidth(),
+                    onGenerateClick = { password = viewModel.generatePassword() },
+                )
+                strength?.let {
+                    Spacer(Modifier.height(4.dp))
+                    StrengthMeter(
+                        score = it.score,
+                        label = "${it.label} — tap generate for a stronger one",
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
             }
-            Spacer(Modifier.height(8.dp))
+
+            PassVaultCard(
+                title = "Extras",
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
+            ) {
+                OutlinedTextField(
+                    value = url,
+                    onValueChange = { url = it },
+                    label = { Text("URL") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text("Notes") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("Favorite", style = MaterialTheme.typography.bodyMedium)
+                    HapticSwitch(checked = favorite, onCheckedChange = { favorite = it })
+                }
+                Spacer(Modifier.height(12.dp))
+            }
+
             Button(
                 onClick = {
                     val draft = VaultEntryDraft(
@@ -168,9 +197,12 @@ fun AddEditEntryScreen(
                     }
                 },
                 enabled = title.isNotBlank(),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = MaterialTheme.shapes.medium,
             ) {
-                Text("Save")
+                Text(if (entryId == null) "Save" else "Save changes")
             }
         }
     }

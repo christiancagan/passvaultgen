@@ -16,7 +16,7 @@ data class AppSettings(
     val autoLockEnabled: Boolean = true,
     val clipboardTimeoutSeconds: Int = 30,
     val biometricEnabled: Boolean = false,
-    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val themeMode: ThemeMode = ThemeMode.DARK,
 )
 
 /**
@@ -39,8 +39,8 @@ class SettingsStore(private val context: Context) {
                 clipboardTimeoutSeconds = prefs[Keys.clipboardTimeoutSeconds] ?: 30,
                 biometricEnabled = prefs[Keys.biometricEnabled] ?: false,
                 themeMode = prefs[Keys.themeMode]?.let {
-                    runCatching { ThemeMode.valueOf(it) }.getOrDefault(ThemeMode.SYSTEM)
-                } ?: ThemeMode.SYSTEM,
+                    runCatching { ThemeMode.valueOf(it) }.getOrDefault(ThemeMode.DARK)
+                } ?: ThemeMode.DARK,
             )
         }
 

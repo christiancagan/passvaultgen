@@ -1,5 +1,10 @@
 package com.example.passwordvault.ui.navigation
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -45,6 +50,9 @@ object Routes {
     fun details(id: String) = "details/$id"
 }
 
+private fun enterFade() = fadeIn(tween(220)) + slideInVertically(tween(220)) { it / 20 }
+private fun exitFade() = fadeOut(tween(140)) + slideOutVertically(tween(140)) { it / 24 }
+
 @Composable
 fun AppNavHost() {
     val navController = rememberNavController()
@@ -71,6 +79,10 @@ fun AppNavHost() {
     NavHost(
         navController = navController,
         startDestination = Routes.WELCOME,
+        enterTransition = { enterFade() },
+        exitTransition = { exitFade() },
+        popEnterTransition = { enterFade() },
+        popExitTransition = { exitFade() },
     ) {
         composable(Routes.WELCOME) {
             WelcomeScreen(
@@ -100,9 +112,14 @@ fun AppNavHost() {
             HomeScreen(
                 onAdd = { navController.navigate(Routes.ADD) },
                 onDetails = { id -> navController.navigate(Routes.details(id)) },
-                onGenerator = { navController.navigate(Routes.GENERATOR) },
-                onSettings = { navController.navigate(Routes.SETTINGS) },
                 onLock = { authViewModel.lock() },
+                onBackup = { navController.navigate(Routes.BACKUP) },
+                onChangePassword = { navController.navigate(Routes.CHANGE_PASSWORD) },
+                onVaultDeleted = {
+                    navController.navigate(Routes.WELCOME) {
+                        popUpTo(Routes.WELCOME) { inclusive = true }
+                    }
+                },
             )
         }
         composable(Routes.ADD) {

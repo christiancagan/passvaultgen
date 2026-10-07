@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -31,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.passwordvault.security.backup.VaultBackupCodec
+import com.example.passwordvault.ui.components.PassVaultCard
 import com.example.passwordvault.ui.components.PassVaultTopBar
 import com.example.passwordvault.ui.components.SecurePasswordField
 import com.example.passwordvault.util.SecureLogger
@@ -86,6 +89,7 @@ fun BackupScreen(
     }
 
     Scaffold(
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
         topBar = {
             PassVaultTopBar(title = "Backup & restore", onBack = onBack)
         },
@@ -94,20 +98,20 @@ fun BackupScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(24.dp),
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = androidx.compose.material3.CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                ),
+            PassVaultCard(
+                title = "Encrypted export",
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                titleColor = MaterialTheme.colorScheme.onSecondaryContainer,
             ) {
                 Text(
                     "Backups are encrypted with your master password. " +
                         "Restoring replaces all current entries.",
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(16.dp),
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
             }
 

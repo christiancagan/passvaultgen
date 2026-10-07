@@ -75,7 +75,7 @@ fun DashboardPane(
                 label = "Weak",
                 value = stats.weak.toString(),
                 icon = Icons.Filled.Warning,
-                color = MaterialTheme.colorScheme.error,
+                color = MaterialTheme.colorScheme.onErrorContainer,
                 containerColor = MaterialTheme.colorScheme.errorContainer,
                 modifier = Modifier.weight(1f),
             )
@@ -83,7 +83,7 @@ fun DashboardPane(
                 label = "Reused",
                 value = stats.reused.toString(),
                 icon = Icons.Filled.ContentCopy,
-                color = Color(0xFFB26A00),
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
                 modifier = Modifier.weight(1f),
             )
@@ -96,7 +96,7 @@ fun DashboardPane(
                 label = "Old (>180d)",
                 value = stats.old.toString(),
                 icon = Icons.Filled.Schedule,
-                color = MaterialTheme.colorScheme.secondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                 modifier = Modifier.weight(1f),
             )
@@ -104,7 +104,7 @@ fun DashboardPane(
                 label = "Healthy",
                 value = (stats.total - minOf(issues, stats.total)).toString(),
                 icon = Icons.Filled.CheckCircle,
-                color = Color(0xFF2E7D5B),
+                color = MaterialTheme.colorScheme.onTertiaryContainer,
                 containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                 modifier = Modifier.weight(1f),
             )
@@ -144,8 +144,9 @@ fun DashboardPane(
 
 @Composable
 private fun HeroCard(total: Int, health: Float, averageScore: Double) {
+    val scheme = MaterialTheme.colorScheme
     Card(
-        shape = RoundedCornerShape(24.dp),
+        shape = MaterialTheme.shapes.extraLarge,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Box(
@@ -157,7 +158,7 @@ private fun HeroCard(total: Int, health: Float, averageScore: Double) {
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
-                        color = Color.White.copy(alpha = 0.2f),
+                        color = scheme.onPrimary.copy(alpha = 0.18f),
                         shape = CircleShape,
                         modifier = Modifier.size(48.dp),
                     ) {
@@ -165,7 +166,7 @@ private fun HeroCard(total: Int, health: Float, averageScore: Double) {
                             Icon(
                                 Icons.Filled.Storage,
                                 contentDescription = null,
-                                tint = Color.White,
+                                tint = scheme.onPrimary,
                             )
                         }
                     }
@@ -173,12 +174,12 @@ private fun HeroCard(total: Int, health: Float, averageScore: Double) {
                         Text(
                             "$total",
                             style = MaterialTheme.typography.displaySmall,
-                            color = Color.White,
+                            color = scheme.onPrimary,
                         )
                         Text(
                             "credentials protected",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.85f),
+                            color = scheme.onPrimary.copy(alpha = 0.9f),
                         )
                     }
                 }
@@ -186,7 +187,7 @@ private fun HeroCard(total: Int, health: Float, averageScore: Double) {
                 Text(
                     "Vault health ${(health * 100).toInt()}% · Avg strength ${"%.1f".format(averageScore)}/4",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.9f),
+                    color = scheme.onPrimary.copy(alpha = 0.95f),
                 )
                 Spacer(Modifier.height(8.dp))
                 LinearProgressIndicator(
@@ -195,8 +196,8 @@ private fun HeroCard(total: Int, health: Float, averageScore: Double) {
                         .fillMaxWidth()
                         .height(8.dp)
                         .clip(RoundedCornerShape(4.dp)),
-                    color = Color.White,
-                    trackColor = Color.White.copy(alpha = 0.3f),
+                    color = scheme.onPrimary,
+                    trackColor = scheme.onPrimary.copy(alpha = 0.25f),
                 )
             }
         }
@@ -214,7 +215,12 @@ private fun StatTile(
 ) {
     Card(
         modifier = modifier,
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = containerColor),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+        ),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),

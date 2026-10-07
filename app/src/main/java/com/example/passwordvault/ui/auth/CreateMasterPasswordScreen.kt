@@ -7,20 +7,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,7 +31,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.passwordvault.security.password.PasswordStrengthAnalyzer
+import com.example.passwordvault.ui.components.GradientBackground
+import com.example.passwordvault.ui.components.PassVaultCard
 import com.example.passwordvault.ui.components.SecurePasswordField
+import com.example.passwordvault.ui.components.StrengthMeter
 
 @Composable
 fun CreateMasterPasswordScreen(
@@ -50,99 +49,83 @@ fun CreateMasterPasswordScreen(
         if (password.isEmpty()) null else PasswordStrengthAnalyzer().analyze(password)
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Surface(
-            color = MaterialTheme.colorScheme.primaryContainer,
-            shape = CircleShape,
-            modifier = Modifier.size(72.dp),
+    GradientBackground {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            androidx.compose.foundation.layout.Box(
-                contentAlignment = Alignment.Center,
+            Column(
+                modifier = Modifier.widthIn(max = 480.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Icon(
-                    Icons.Filled.Shield,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(36.dp),
+                Text("Create Master Password", style = MaterialTheme.typography.headlineSmall)
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "This password encrypts your vault. It cannot be recovered if forgotten.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            }
-        }
-        Spacer(Modifier.height(16.dp))
-        Text("Create Master Password", style = MaterialTheme.typography.headlineSmall)
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "This password encrypts your vault. It cannot be recovered if forgotten.",
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(24.dp))
 
-        SecurePasswordField(
-            value = password,
-            onValueChange = { password = it },
-            label = "Master password",
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(8.dp))
-        FilledTonalButton(
-            onClick = {
-                val generated = viewModel.generatePassword()
-                password = generated
-                confirm = generated
-            },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Icon(Icons.Filled.Refresh, contentDescription = null)
-            Spacer(Modifier.height(0.dp))
-            Text("Generate a strong password")
-        }
-        Spacer(Modifier.height(8.dp))
-        strength?.let {
-            Text(
-                "Strength: ${it.label}",
-                style = MaterialTheme.typography.bodySmall,
-                color = when (it.score) {
-                    0, 1 -> MaterialTheme.colorScheme.error
-                    2 -> MaterialTheme.colorScheme.secondary
-                    else -> MaterialTheme.colorScheme.tertiary
-                },
-            )
-            Spacer(Modifier.height(4.dp))
-            LinearProgressIndicator(
-                progress = { (it.score + 1) / 5f },
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-        Spacer(Modifier.height(16.dp))
-        SecurePasswordField(
-            value = confirm,
-            onValueChange = { confirm = it },
-            label = "Confirm master password",
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(16.dp))
+                PassVaultCard {
+                    SecurePasswordField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = "Master password",
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    FilledTonalButton(
+                        onClick = {
+                            val generated = viewModel.generatePassword()
+                            password = generated
+                            confirm = generated
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium,
+                    ) {
+                        Icon(Icons.Filled.Refresh, contentDescription = null)
+                        Spacer(Modifier.height(0.dp))
+                        Text("Generate a strong password")
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    strength?.let {
+                        StrengthMeter(score = it.score, label = it.label)
+                        Spacer(Modifier.height(12.dp))
+                    }
+                    SecurePasswordField(
+                        value = confirm,
+                        onValueChange = { confirm = it },
+                        label = "Confirm master password",
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(12.dp))
 
-        uiState.error?.let {
-            Text(it, color = MaterialTheme.colorScheme.error)
-            Spacer(Modifier.height(8.dp))
-        }
+                    uiState.error?.let {
+                        Text(it, color = MaterialTheme.colorScheme.error)
+                        Spacer(Modifier.height(8.dp))
+                    }
 
-        Button(
-            onClick = { viewModel.createVault(password, confirm) },
-            enabled = !uiState.isLoading && password.isNotEmpty() && confirm.isNotEmpty(),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            if (uiState.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.height(20.dp))
-            } else {
-                Text("Create vault")
+                    Button(
+                        onClick = { viewModel.createVault(password, confirm) },
+                        enabled = !uiState.isLoading && password.isNotEmpty() && confirm.isNotEmpty(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = MaterialTheme.shapes.medium,
+                    ) {
+                        if (uiState.isLoading) {
+                            CircularProgressIndicator(modifier = Modifier.height(20.dp))
+                        } else {
+                            Text("Create vault")
+                        }
+                    }
+                }
             }
         }
     }

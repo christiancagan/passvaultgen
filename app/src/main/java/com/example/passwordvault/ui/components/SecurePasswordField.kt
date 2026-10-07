@@ -56,7 +56,11 @@ fun SecurePasswordField(
                         )
                     }
                 }
-                IconButton(onClick = { visible = !visible }) {
+                val tap = rememberHapticTap()
+                IconButton(onClick = {
+                    tap()
+                    visible = !visible
+                }) {
                     Icon(
                         imageVector = if (visible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
                         contentDescription = if (visible) "Hide password" else "Show password",

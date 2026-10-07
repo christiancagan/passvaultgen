@@ -1,81 +1,96 @@
 package com.example.passwordvault.ui.theme
 
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import com.example.passwordvault.data.repository.ThemeMode
 
-private val LightColors = lightColorScheme(
-    primary = Color(0xFF0A3D91),
-    onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFD8E2FF),
-    onPrimaryContainer = Color(0xFF001A43),
-    secondary = Color(0xFF3E5C8A),
-    onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = Color(0xFFD6E4FF),
-    onSecondaryContainer = Color(0xFF091B36),
-    tertiary = Color(0xFF2E7D5B),
-    onTertiary = Color(0xFFFFFFFF),
-    tertiaryContainer = Color(0xFFB9EDCF),
-    onTertiaryContainer = Color(0xFF00210F),
-    error = Color(0xFFBA1A1A),
-    errorContainer = Color(0xFFFFDAD6),
-    background = Color(0xFFF6F8FC),
-    onBackground = Color(0xFF171C26),
-    surface = Color(0xFFF6F8FC),
-    onSurface = Color(0xFF171C26),
-    surfaceVariant = Color(0xFFE1E7F2),
-    onSurfaceVariant = Color(0xFF424B5C),
-    surfaceContainerLowest = Color(0xFFFFFFFF),
-    surfaceContainerLow = Color(0xFFEFF3FA),
-    surfaceContainer = Color(0xFFE9EEF7),
-    surfaceContainerHigh = Color(0xFFE3E9F4),
-    surfaceContainerHighest = Color(0xFFDDE4F0),
-    outline = Color(0xFF737D90),
-    outlineVariant = Color(0xFFC2C9D8),
+/** True when the brand dark palette is active; used by strength text colors. */
+val LocalIsDark = staticCompositionLocalOf { true }
+
+private val BrandDark = darkColorScheme(
+    primary = BrandTealDark,
+    onPrimary = Color(0xFF00382B),
+    primaryContainer = Color(0xFF0E5C48),
+    onPrimaryContainer = Color(0xFFBDF5E5),
+    secondary = BrandIndigoDark,
+    onSecondary = Color(0xFF001453),
+    secondaryContainer = Color(0xFF2A3A7E),
+    onSecondaryContainer = Color(0xFFDEE2FF),
+    tertiary = BrandVioletDark,
+    onTertiary = Color(0xFF350070),
+    tertiaryContainer = Color(0xFF4F1E96),
+    onTertiaryContainer = Color(0xFFEDDCFF),
+    error = Color(0xFFFFB4AB),
+    onError = Color(0xFF690005),
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD6),
+    background = NavyBackdrop,
+    onBackground = Color(0xFFE1E7F1),
+    surface = Color(0xFF0E1626),
+    onSurface = Color(0xFFE1E7F1),
+    surfaceVariant = Color(0xFF1B2536),
+    onSurfaceVariant = Color(0xFFC1C8D6),
+    surfaceContainerLowest = Color(0xFF070D18),
+    surfaceContainerLow = Color(0xFF0A1220),
+    surfaceContainer = Color(0xFF0E1626),
+    surfaceContainerHigh = Color(0xFF151F31),
+    surfaceContainerHighest = Color(0xFF1D283C),
+    outline = Color(0xFF8B93A4),
+    outlineVariant = Color(0xFF3A4558),
 )
 
-private val DarkColors = darkColorScheme(
-    primary = Color(0xFFA9C3FF),
-    onPrimary = Color(0xFF002F67),
-    primaryContainer = Color(0xFF0A3D91),
-    onPrimaryContainer = Color(0xFFD8E2FF),
-    secondary = Color(0xFF9FB4D8),
-    onSecondary = Color(0xFF16283F),
-    secondaryContainer = Color(0xFF2D435F),
-    onSecondaryContainer = Color(0xFFD6E4FF),
-    tertiary = Color(0xFF6FBF9A),
-    onTertiary = Color(0xFF003823),
-    tertiaryContainer = Color(0xFF00513A),
-    onTertiaryContainer = Color(0xFFB9EDCF),
-    error = Color(0xFFFFB4AB),
-    errorContainer = Color(0xFF93000A),
-    background = Color(0xFF060D1A),
-    onBackground = Color(0xFFE2E7F2),
-    surface = Color(0xFF060D1A),
-    onSurface = Color(0xFFE2E7F2),
-    surfaceVariant = Color(0xFF1B2436),
-    onSurfaceVariant = Color(0xFFC2C9D8),
-    surfaceContainerLowest = Color(0xFF030710),
-    surfaceContainerLow = Color(0xFF0A1222),
-    surfaceContainer = Color(0xFF101A2E),
-    surfaceContainerHigh = Color(0xFF18233A),
-    surfaceContainerHighest = Color(0xFF222D44),
-    outline = Color(0xFF8C96AB),
-    outlineVariant = Color(0xFF35415A),
+private val BrandLight = lightColorScheme(
+    primary = BrandTealLight,
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFFA9F2DE),
+    onPrimaryContainer = Color(0xFF002019),
+    secondary = BrandIndigoLight,
+    onSecondary = Color(0xFFFFFFFF),
+    secondaryContainer = Color(0xFFDDE2FF),
+    onSecondaryContainer = Color(0xFF00105C),
+    tertiary = BrandVioletLight,
+    onTertiary = Color(0xFFFFFFFF),
+    tertiaryContainer = Color(0xFFEADCFF),
+    onTertiaryContainer = Color(0xFF24005B),
+    error = Color(0xFFBA1A1A),
+    onError = Color(0xFFFFFFFF),
+    errorContainer = Color(0xFFFFDAD6),
+    onErrorContainer = Color(0xFF410002),
+    background = Color(0xFFF2F6FC),
+    onBackground = Color(0xFF111825),
+    surface = Color(0xFFF8FAFE),
+    onSurface = Color(0xFF111825),
+    surfaceVariant = Color(0xFFDDE5EE),
+    onSurfaceVariant = Color(0xFF40495A),
+    surfaceContainerLowest = Color(0xFFFFFFFF),
+    surfaceContainerLow = Color(0xFFF1F5FB),
+    surfaceContainer = Color(0xFFEDF2F9),
+    surfaceContainerHigh = Color(0xFFE7EDF6),
+    surfaceContainerHighest = Color(0xFFE1E8F2),
+    outline = Color(0xFF717A8A),
+    outlineVariant = Color(0xFFC0C8D6),
 )
 
 /**
- * App theme. Follows [mode]: an explicit LIGHT/DARK choice, or the system
- * setting when [ThemeMode.SYSTEM].
+ * App theme. Dark is the design default; [ThemeMode.SYSTEM] additionally opts
+ * into Android 12+ dynamic color, falling back to the brand palette when the
+ * explicit LIGHT/DARK modes are chosen or dynamic color is unavailable.
  */
 @Composable
 fun PassVaultTheme(
-    mode: ThemeMode = ThemeMode.SYSTEM,
+    mode: ThemeMode = ThemeMode.DARK,
+    dynamicColor: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     val darkTheme = when (mode) {
@@ -83,15 +98,29 @@ fun PassVaultTheme(
         ThemeMode.DARK -> true
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
     }
-    MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
-        content = content,
-    )
+    val context = LocalContext.current
+    val useDynamic = mode == ThemeMode.SYSTEM &&
+        dynamicColor &&
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val colorScheme = when {
+        useDynamic && darkTheme -> dynamicDarkColorScheme(context)
+        useDynamic -> dynamicLightColorScheme(context)
+        darkTheme -> BrandDark
+        else -> BrandLight
+    }
+    CompositionLocalProvider(LocalIsDark provides darkTheme) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = AppTypography,
+            shapes = AppShapes,
+            content = content,
+        )
+    }
 }
 
 /**
- * Signature brand gradient (deep blue to slate blue) for hero panels.
- * Reads the active color scheme, so it adapts to light and dark mode.
+ * Signature brand gradient (teal to electric indigo) for hero panels.
+ * Reads the active color scheme, so it adapts to light, dark, and dynamic.
  */
 @Composable
 fun brandGradient(): Brush {
