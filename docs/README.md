@@ -3,7 +3,7 @@
 This folder is served by **GitHub Pages** as the app's public download page.
 
 - Open the site at: `https://<your-username>.github.io/<your-repo>/`
-- The download button serves `passvaultgen-release.apk` (v1.5.1, 2.9 MB, signed).
+- The download button serves `passvaultgen-release.apk` (v1.5.2, 2.9 MB, signed).
 
 ## Files
 - `index.html` — the landing page with the download button/icon
