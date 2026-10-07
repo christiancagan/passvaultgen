@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.passwordvault.ui.components.GradientBackground
 import com.example.passwordvault.ui.components.PassVaultCard
 import com.example.passwordvault.ui.components.SecurePasswordField
 import com.example.passwordvault.ui.components.ThemeToggleButton
@@ -47,17 +46,16 @@ fun UnlockScreen(
     var password by rememberSaveable { mutableStateOf("") }
     val activity = LocalContext.current as? FragmentActivity
 
-    GradientBackground {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                ThemeToggleButton()
-            }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            ThemeToggleButton()
+        }
             Spacer(Modifier.height(8.dp))
             Box(
                 modifier = Modifier
@@ -127,5 +125,4 @@ fun UnlockScreen(
                 }
             }
         }
-    }
 }

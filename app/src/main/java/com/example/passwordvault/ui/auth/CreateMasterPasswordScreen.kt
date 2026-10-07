@@ -31,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.passwordvault.security.password.PasswordStrengthAnalyzer
-import com.example.passwordvault.ui.components.GradientBackground
 import com.example.passwordvault.ui.components.PassVaultCard
 import com.example.passwordvault.ui.components.SecurePasswordField
 import com.example.passwordvault.ui.components.StrengthMeter
@@ -49,19 +48,18 @@ fun CreateMasterPasswordScreen(
         if (password.isEmpty()) null else PasswordStrengthAnalyzer().analyze(password)
     }
 
-    GradientBackground {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(24.dp),
-            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.widthIn(max = 480.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Column(
-                modifier = Modifier.widthIn(max = 480.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
                 Text("Create Master Password", style = MaterialTheme.typography.headlineSmall)
                 Spacer(Modifier.height(8.dp))
                 Text(
@@ -128,5 +126,4 @@ fun CreateMasterPasswordScreen(
                 }
             }
         }
-    }
 }

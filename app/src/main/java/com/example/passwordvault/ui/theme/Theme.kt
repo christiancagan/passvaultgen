@@ -14,7 +14,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -113,7 +112,13 @@ fun PassVaultTheme(
         darkTheme -> BrandDark
         else -> BrandLight
     }
-    CompositionLocalProvider(LocalIsDark provides darkTheme) {
+    CompositionLocalProvider(
+        LocalIsDark provides darkTheme,
+        // Text() placed directly on the gradient (auth screens, panes) has no
+        // Surface above it, so bind the correct ink globally: light ink on the
+        // dark palette, dark ink on the light palette.
+        androidx.compose.material3.LocalContentColor provides colorScheme.onBackground,
+    ) {
         ApplyModeToWindow(darkTheme)
         MaterialTheme(
             colorScheme = colorScheme,
@@ -125,17 +130,16 @@ fun PassVaultTheme(
 }
 
 /**
- * Keeps the window surface and system-bar icons in sync with the in-app mode
- * (which may differ from the system setting when LIGHT/DARK is pinned): dark
- * ink on light paper, light ink on dark navy.
+ * Keeps the system-bar icons in sync with the in-app mode (which may differ
+ * from the system setting when LIGHT/DARK is pinned): dark background gets
+ * light icons and vice versa. The window background itself stays on the
+ * theme's splash/gradient.
  */
 @Composable
 private fun ApplyModeToWindow(dark: Boolean) {
     val context = LocalContext.current
     val view = LocalView.current
     LaunchedEffect(dark, view) {
-        val backdrop = if (dark) Color(0xFF0B1220) else Color(0xFFF2F6FC)
-        view.setBackgroundColor(backdrop.toArgb())
         val window = (context as? Activity)?.window
         if (window != null) {
             val controller = WindowCompat.getInsetsController(window, view)

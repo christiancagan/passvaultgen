@@ -26,7 +26,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.passwordvault.ui.components.GradientBackground
 import com.example.passwordvault.ui.components.ThemeToggleButton
 import com.example.passwordvault.ui.theme.brandGradient
 
@@ -35,17 +34,16 @@ fun WelcomeScreen(
     onNavigateToCreate: () -> Unit,
     onNavigateToUnlock: () -> Unit,
 ) {
-    GradientBackground {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                ThemeToggleButton()
-            }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            ThemeToggleButton()
+        }
             Spacer(Modifier.height(8.dp))
             Box(
                 modifier = Modifier.size(128.dp),
@@ -112,5 +110,4 @@ fun WelcomeScreen(
                 }
             }
         }
-    }
 }

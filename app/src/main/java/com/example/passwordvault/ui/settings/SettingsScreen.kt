@@ -132,6 +132,12 @@ fun SettingsPane(
             FilledTonalButton(onClick = onBackup, modifier = Modifier.fillMaxWidth()) {
                 Text("Backup & restore")
             }
+            Text(
+                "When enabled, PassVaultGen suggests saved passwords on other apps' login " +
+                    "forms and asks to save new ones when you submit them.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,

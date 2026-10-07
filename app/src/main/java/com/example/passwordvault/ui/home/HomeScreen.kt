@@ -39,7 +39,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.passwordvault.ui.components.GradientBackground
 import com.example.passwordvault.ui.components.PassVaultTopBar
 import com.example.passwordvault.ui.dashboard.DashboardPane
 import com.example.passwordvault.ui.dashboard.SecurityDashboardViewModel
@@ -122,33 +121,31 @@ fun HomeScreen(
             }
         },
     ) { padding ->
-        GradientBackground {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-            ) {
-                AnimatedContent(
-                    targetState = tab,
-                    transitionSpec = {
-                        (fadeIn(tween(180)) + slideInVertically(tween(180)) { it / 16 }) togetherWith
-                            fadeOut(tween(120))
-                    },
-                    label = "home-tab",
-                ) { target ->
-                    when (target) {
-                        HomeTab.DASHBOARD -> DashboardPane(viewModel = dashboardViewModel)
-                        HomeTab.VAULT -> VaultPane(
-                            onDetails = onDetails,
-                            snackbarHostState = snackbarHostState,
-                        )
-                        HomeTab.GENERATOR -> GeneratorPane(snackbarHostState = snackbarHostState)
-                        HomeTab.SETTINGS -> SettingsPane(
-                            onBackup = onBackup,
-                            onChangePassword = onChangePassword,
-                            onVaultDeleted = onVaultDeleted,
-                        )
-                    }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+        ) {
+            AnimatedContent(
+                targetState = tab,
+                transitionSpec = {
+                    (fadeIn(tween(180)) + slideInVertically(tween(180)) { it / 16 }) togetherWith
+                        fadeOut(tween(120))
+                },
+                label = "home-tab",
+            ) { target ->
+                when (target) {
+                    HomeTab.DASHBOARD -> DashboardPane(viewModel = dashboardViewModel)
+                    HomeTab.VAULT -> VaultPane(
+                        onDetails = onDetails,
+                        snackbarHostState = snackbarHostState,
+                    )
+                    HomeTab.GENERATOR -> GeneratorPane(snackbarHostState = snackbarHostState)
+                    HomeTab.SETTINGS -> SettingsPane(
+                        onBackup = onBackup,
+                        onChangePassword = onChangePassword,
+                        onVaultDeleted = onVaultDeleted,
+                    )
                 }
             }
         }
