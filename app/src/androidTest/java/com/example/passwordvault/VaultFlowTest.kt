@@ -62,7 +62,7 @@ class VaultFlowTest {
         goToVaultTab()
 
         compose.onNodeWithContentDescription("Lock vault").performClick()
-        waitForText("Unlock Vault", 10_000)
+        waitForText("Unlock", 10_000)
 
         unlockWith(password)
         waitForText("Vault", 120_000)
@@ -75,7 +75,7 @@ class VaultFlowTest {
         goToVaultTab()
 
         compose.onNodeWithContentDescription("Lock vault").performClick()
-        waitForText("Unlock Vault", 10_000)
+        waitForText("Unlock", 10_000)
 
         repeat(6) {
             unlockWith("wrong-password")

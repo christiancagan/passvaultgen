@@ -2,9 +2,8 @@ package com.example.passwordvault.ui.auth
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,7 +22,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,6 +30,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -54,6 +53,7 @@ fun UnlockScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var password by rememberSaveable { mutableStateOf("") }
+    var biometricsError by rememberSaveable { mutableStateOf<String?>(null) }
     val activity = LocalContext.current as? FragmentActivity
     val scheme = MaterialTheme.colorScheme
     val dark = LocalIsDark.current
@@ -78,9 +78,7 @@ fun UnlockScreen(
         )
     }
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        val artReserve = maxHeight * 0.44f
-
+    Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.bg_unlock),
             contentDescription = null,
@@ -92,89 +90,89 @@ fun UnlockScreen(
         )
         Box(modifier = Modifier.fillMaxSize().background(scrim))
 
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            contentAlignment = Alignment.Center,
         ) {
-            Spacer(Modifier.height(artReserve))
-            Box(
-                modifier = Modifier.weight(1f),
-                contentAlignment = Alignment.Center,
+            Column(
+                modifier = Modifier
+                    .verticalScroll(rememberScrollState())
+                    .widthIn(max = 480.dp)
+                    .padding(vertical = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Column(
-                    modifier = Modifier
-                        .verticalScroll(rememberScrollState())
-                        .widthIn(max = 480.dp)
-                        .padding(bottom = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .background(
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                                CircleShape,
-                            ),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            Icons.Filled.Fingerprint,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(40.dp),
-                        )
-                    }
-                    Spacer(Modifier.height(16.dp))
-                    Text("Unlock Vault", style = MaterialTheme.typography.headlineSmall)
-                    Spacer(Modifier.height(24.dp))
+                PassVaultCard {
+                    SecurePasswordField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = "Master password",
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(12.dp))
 
-                    PassVaultCard {
-                        SecurePasswordField(
-                            value = password,
-                            onValueChange = { password = it },
-                            label = "Master password",
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        Spacer(Modifier.height(12.dp))
-
-                        uiState.error?.let {
-                            Text(it, color = MaterialTheme.colorScheme.error)
-                            Spacer(Modifier.height(8.dp))
-                        }
-
-                        Button(
-                            onClick = { viewModel.unlock(password) },
-                            enabled = !uiState.isLoading && password.isNotEmpty(),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(52.dp),
-                            shape = MaterialTheme.shapes.medium,
-                        ) {
-                            if (uiState.isLoading) {
-                                CircularProgressIndicator(modifier = Modifier.height(20.dp))
-                            } else {
-                                Text("Unlock")
-                            }
-                        }
+                    uiState.error?.let {
+                        Text(it, color = MaterialTheme.colorScheme.error)
                         Spacer(Modifier.height(8.dp))
-                        if (activity != null) {
-                            OutlinedButton(
-                                onClick = {
-                                    viewModel.unlockWithBiometrics(activity) { success ->
-                                        if (success) onUnlocked()
-                                    }
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(52.dp),
-                                shape = MaterialTheme.shapes.medium,
-                            ) {
-                                Text("Unlock with biometrics")
-                            }
+                    }
+
+                    Button(
+                        onClick = { viewModel.unlock(password) },
+                        enabled = !uiState.isLoading && password.isNotEmpty(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = MaterialTheme.shapes.medium,
+                    ) {
+                        if (uiState.isLoading) {
+                            CircularProgressIndicator(modifier = Modifier.height(20.dp))
+                        } else {
+                            Text("Unlock")
                         }
                     }
+                }
+
+                Spacer(Modifier.height(28.dp))
+
+                // Fingerprint trigger: replaces the old "Unlock with biometrics" button.
+                // Always visible; tapping when biometrics are unavailable shows an error.
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(CircleShape)
+                        .background(
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                        )
+                        .clickable {
+                            biometricsError = null
+                            val act = activity
+                            if (act == null) {
+                                biometricsError = "Biometrics not available on this device"
+                            } else {
+                                viewModel.unlockWithBiometrics(act) { success ->
+                                    if (success) {
+                                        onUnlocked()
+                                    } else {
+                                        biometricsError =
+                                            "Biometric unlock failed or not available"
+                                    }
+                                }
+                            }
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Filled.Fingerprint,
+                        contentDescription = "Unlock with biometrics",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(40.dp),
+                    )
+                }
+
+                biometricsError?.let {
+                    Spacer(Modifier.height(12.dp))
+                    Text(it, color = MaterialTheme.colorScheme.error)
                 }
             }
         }
