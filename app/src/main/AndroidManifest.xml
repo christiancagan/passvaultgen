@@ -27,6 +27,14 @@
             </intent-filter>
         </activity>
 
+        <!-- Unlock gate for autofill disclosure: translucent dialog activity fired
+             from auth-gated dataset rows. Never exported, never in recents. -->
+        <activity
+            android:name=".ui.autofill.AutofillAuthActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <service
             android:name=".service.autofill.PassVaultAutofillService"
             android:exported="true"

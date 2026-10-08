@@ -134,7 +134,8 @@ fun SettingsPane(
             }
             Text(
                 "When enabled, PassVaultGen suggests saved passwords on other apps' login " +
-                    "forms and asks to save new ones when you submit them.",
+                    "forms and asks to save new ones when you submit them. " +
+                    "Filling always asks you to unlock first.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

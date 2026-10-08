@@ -14,12 +14,12 @@ import android.service.autofill.SaveInfo
 import android.service.autofill.SaveRequest
 import android.view.View
 import android.view.autofill.AutofillId
-import android.view.autofill.AutofillValue
 import android.widget.RemoteViews
 import com.example.passwordvault.MainActivity
 import com.example.passwordvault.data.repository.VaultRepository
 import com.example.passwordvault.domain.model.VaultEntryDraft
 import com.example.passwordvault.security.crypto.VaultSession
+import com.example.passwordvault.ui.autofill.AutofillAuthActivity
 import com.example.passwordvault.util.SecureLogger
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -34,18 +34,21 @@ import javax.inject.Inject
 /**
  * System autofill provider: fill AND save.
  *
- * Fill: the system sends the requesting app's package and its login form's
- * autofill fields. If the vault is unlocked, matching entries are offered as
- * datasets that fill username + password (this is the "suggest saved
- * passwords when logging into other apps" behavior). If locked, datasets are
- * gated behind an authentication tap that opens the app to unlock.
+ * Fill: the system sends the requesting app's package, the page domain for
+ * browser logins, and the login form's autofill fields. Matching entries are
+ * offered as datasets, but values are never disclosed directly: every dataset
+ * is gated behind an authentication tap that opens [AutofillAuthActivity],
+ * which requires a fresh unlock (biometric, or master password as fallback)
+ * on every fill — even when the vault is already open elsewhere. Success
+ * returns the filled dataset to the framework immediately.
  *
  * Save: when the vault is unlocked and a form has a password field, the
  * response carries a SaveInfo, so after the user submits the form the system
  * prompts "Save to PassVaultGen". Confirming invokes onSaveRequest, which
- * reads the typed username/password and stores them as a new entry titled
- * with the other app's label. Nothing is ever offered inside our own
- * package, and entry titles are the only thing shown.
+ * reads the typed username/password (plus the page domain for browser saves)
+ * and stores them as a new entry. Save stays fail-closed: a locked vault
+ * refuses the write. Nothing is ever offered inside our own package, and
+ * entry titles (non-secret summaries) are the only thing shown.
  *
  * Note: the RemoteViews dataset APIs are deprecated in favor of inline
  * (keyboard-strip) suggestions, but dropdown presentations remain fully
@@ -129,15 +132,19 @@ class PassVaultAutofillService : android.service.autofill.AutofillService() {
                     return@launch
                 }
                 val appLabel = appLabelOf(packageName).ifBlank { packageName }
+                // Browser saves keep the page domain as title + url so future
+                // logins on that site match; native-app saves keep the app label.
+                val domain = saved.webDomain?.let { AutofillMatcher.hostOf(it) }.orEmpty()
+                val title = domain.ifBlank { appLabel }
                 withContext(Dispatchers.Default) {
                     repository.add(
                         VaultEntryDraft(
-                            title = appLabel,
+                            title = title,
                             category = "Autofill",
-                            name = appLabel,
+                            name = title,
                             username = saved.username.orEmpty(),
                             password = password,
-                            url = "",
+                            url = domain,
                             notes = "",
                             favorite = false,
                         ),
@@ -153,14 +160,22 @@ class PassVaultAutofillService : android.service.autofill.AutofillService() {
 
     private fun packageName(): String = applicationContext.packageName
 
-    private data class SavedValues(val username: String?, val password: String?)
+    private data class SavedValues(
+        val username: String?,
+        val password: String?,
+        val webDomain: String?,
+    )
 
     private fun collectSavedValues(structure: AssistStructure): SavedValues {
         var username: String? = null
         var password: String? = null
+        var webDomain: String? = null
         for (i in 0 until structure.windowNodeCount) {
             val root = structure.getWindowNodeAt(i).rootViewNode ?: continue
             traverse(root) { node ->
+                if (webDomain == null) {
+                    webDomain = node.webDomain?.takeIf { it.isNotBlank() }
+                }
                 val hints = node.autofillHints ?: return@traverse
                 val autofillValue = node.autofillValue ?: return@traverse
                 val text = autofillValue.takeIf { it.isText }?.textValue?.toString()?.takeIf { it.isNotEmpty() }
@@ -175,7 +190,7 @@ class PassVaultAutofillService : android.service.autofill.AutofillService() {
                 }
             }
         }
-        return SavedValues(username, password)
+        return SavedValues(username, password, webDomain)
     }
 
     private suspend fun buildResponse(
@@ -191,12 +206,17 @@ class PassVaultAutofillService : android.service.autofill.AutofillService() {
             }
         } else {
             // Locked: summaries carry no secrets, so title matching is safe.
+            // (Summaries have no URL, so locked matching is title/package only.)
             repository.observeAll().first().map {
                 AutofillCandidate(id = it.id, title = it.title, url = "")
             }
         }
-        val matches = AutofillMatcher.findMatches(candidates, packageName, appLabel)
-            .take(MAX_DATASETS)
+        val matches = AutofillMatcher.findMatches(
+            candidates,
+            packageName,
+            appLabel,
+            webDomain = fields.webDomain,
+        ).take(MAX_DATASETS)
         if (matches.isEmpty()) {
             if (!unlocked) {
                 // Locked: offer the unlock row so the user can open the vault.
@@ -218,18 +238,12 @@ class PassVaultAutofillService : android.service.autofill.AutofillService() {
 
         val builder = FillResponse.Builder()
         for (match in matches) {
+            // Every dataset is auth-gated: tapping it opens AutofillAuthActivity,
+            // which requires a fresh unlock before the framework fills anything.
             builder.addDataset(
-                if (unlocked) {
-                    val entry = repository.getEntry(match.id) ?: continue
-                    Dataset.Builder(presentation(entry.title)).apply {
-                        fields.usernameId?.let { setValue(it, AutofillValue.forText(entry.username)) }
-                        fields.passwordId?.let { setValue(it, AutofillValue.forText(entry.password)) }
-                    }.build()
-                } else {
-                    Dataset.Builder(presentation(match.title)).apply {
-                        setAuthentication(unlockIntentSender())
-                    }.build()
-                },
+                Dataset.Builder(presentation(match.title)).apply {
+                    setAuthentication(authIntentSender(match.id, match.title, fields))
+                }.build(),
             )
         }
         if (unlocked && fields.passwordId != null) {
@@ -238,6 +252,24 @@ class PassVaultAutofillService : android.service.autofill.AutofillService() {
         }
         return builder.build()
     }
+
+    /** Pending tap target for one auth-gated dataset row: the unlock activity. */
+    private fun authIntentSender(
+        entryId: String,
+        entryTitle: String,
+        fields: LoginFields,
+    ) = PendingIntent.getActivity(
+        this,
+        (entryId + fields.allIds().joinToString { it.toString() }).hashCode(),
+        Intent(this, AutofillAuthActivity::class.java).apply {
+            putExtra(AutofillAuthActivity.EXTRA_ENTRY_ID, entryId)
+            putExtra(AutofillAuthActivity.EXTRA_ENTRY_TITLE, entryTitle)
+            fields.usernameId?.let { putExtra(AutofillAuthActivity.EXTRA_USERNAME_ID, it) }
+            fields.passwordId?.let { putExtra(AutofillAuthActivity.EXTRA_PASSWORD_ID, it) }
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        },
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    ).intentSender
 
     private fun saveInfo(fields: LoginFields): SaveInfo {
         val category = if (fields.usernameId != null) {
@@ -276,6 +308,7 @@ class PassVaultAutofillService : android.service.autofill.AutofillService() {
     private data class LoginFields(
         val usernameId: AutofillId?,
         val passwordId: AutofillId?,
+        val webDomain: String?,
     ) {
         fun allIds(): List<AutofillId> = listOfNotNull(usernameId, passwordId)
     }
@@ -283,9 +316,15 @@ class PassVaultAutofillService : android.service.autofill.AutofillService() {
     private fun parseFields(structure: AssistStructure): LoginFields {
         var usernameId: AutofillId? = null
         var passwordId: AutofillId? = null
+        var webDomain: String? = null
         for (i in 0 until structure.windowNodeCount) {
             val root = structure.getWindowNodeAt(i).rootViewNode ?: continue
             traverse(root) { node ->
+                // Browsers tag the page on their web nodes (API 26+); the first
+                // non-blank domain identifies the site being logged into.
+                if (webDomain == null) {
+                    webDomain = node.webDomain?.takeIf { it.isNotBlank() }
+                }
                 val hints = node.autofillHints ?: return@traverse
                 val id = node.autofillId ?: return@traverse
                 when {
@@ -296,7 +335,7 @@ class PassVaultAutofillService : android.service.autofill.AutofillService() {
                 }
             }
         }
-        return LoginFields(usernameId, passwordId)
+        return LoginFields(usernameId, passwordId, webDomain)
     }
 
     private fun traverse(node: AssistStructure.ViewNode, visit: (AssistStructure.ViewNode) -> Unit) {
