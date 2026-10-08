@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -44,7 +43,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.passwordvault.R
 import com.example.passwordvault.ui.components.PassVaultCard
 import com.example.passwordvault.ui.components.SecurePasswordField
-import com.example.passwordvault.ui.components.ThemeToggleButton
 import com.example.passwordvault.ui.theme.LocalIsDark
 
 @Composable
@@ -182,14 +180,6 @@ fun UnlockScreen(
                     Text(it, color = MaterialTheme.colorScheme.error)
                 }
             }
-        }
-
-        Row(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(8.dp),
-        ) {
-            ThemeToggleButton()
         }
     }
 }
