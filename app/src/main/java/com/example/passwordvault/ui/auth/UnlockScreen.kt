@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -78,7 +79,9 @@ fun UnlockScreen(
         )
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val artReserve = maxHeight * 0.44f
+
         Image(
             painter = painterResource(id = R.drawable.bg_unlock),
             contentDescription = null,
@@ -90,17 +93,21 @@ fun UnlockScreen(
         )
         Box(modifier = Modifier.fillMaxSize().background(scrim))
 
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp),
-            contentAlignment = Alignment.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            Spacer(Modifier.height(artReserve))
+            Text("Unlock Vault", style = MaterialTheme.typography.headlineSmall)
+            Spacer(Modifier.height(24.dp))
+
             Column(
                 modifier = Modifier
-                    .verticalScroll(rememberScrollState())
                     .widthIn(max = 480.dp)
-                    .padding(vertical = 16.dp),
+                    .padding(bottom = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 PassVaultCard {
