@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 fun PassVaultTopBar(
     title: String,
     modifier: Modifier = Modifier,
+    titleModifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
     showThemeToggle: Boolean = true,
     actions: @Composable RowScope.() -> Unit = {},
@@ -34,6 +35,7 @@ fun PassVaultTopBar(
                 title,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
+                modifier = titleModifier,
             )
         },
         modifier = modifier,

@@ -41,6 +41,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.graphicsLayer
@@ -68,15 +71,17 @@ private enum class HomeTab(
  * Post-unlock home: a four-tab bottom navigation over the layered gradient
  * backdrop. The security dashboard is the landing tab.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun HomeScreen(
     onAdd: () -> Unit,
-    onDetails: (String) -> Unit,
+    onDetails: (String, String) -> Unit,
     onLock: () -> Unit,
     onBackup: () -> Unit,
     onChangePassword: () -> Unit,
     onVaultDeleted: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     dashboardViewModel: SecurityDashboardViewModel = hiltViewModel(),
 ) {
     var tab by rememberSaveable { mutableStateOf(HomeTab.DASHBOARD) }
@@ -167,6 +172,8 @@ fun HomeScreen(
                     HomeTab.VAULT -> VaultPane(
                         onDetails = onDetails,
                         snackbarHostState = snackbarHostState,
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope,
                     )
                     HomeTab.GENERATOR -> GeneratorPane(snackbarHostState = snackbarHostState)
                     HomeTab.SETTINGS -> SettingsPane(

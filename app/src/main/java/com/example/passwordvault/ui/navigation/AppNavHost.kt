@@ -1,5 +1,10 @@
 package com.example.passwordvault.ui.navigation
 
+import android.net.Uri
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -47,12 +52,13 @@ object Routes {
     const val CHANGE_PASSWORD = "change_password"
 
     fun edit(id: String) = "edit/$id"
-    fun details(id: String) = "details/$id"
+    fun details(id: String, title: String) = "details/$id?title=${Uri.encode(title)}"
 }
 
 private fun enterFade() = fadeIn(tween(220)) + slideInVertically(tween(220)) { it / 20 }
 private fun exitFade() = fadeOut(tween(140)) + slideOutVertically(tween(140)) { it / 24 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun AppNavHost() {
     val navController = rememberNavController()
@@ -76,92 +82,130 @@ fun AppNavHost() {
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    NavHost(
-        navController = navController,
-        startDestination = Routes.WELCOME,
-        enterTransition = { enterFade() },
-        exitTransition = { exitFade() },
-        popEnterTransition = { enterFade() },
-        popExitTransition = { exitFade() },
-    ) {
-        composable(Routes.WELCOME) {
-            WelcomeScreen(
-                onNavigateToCreate = { navController.navigate(Routes.CREATE) },
-                onNavigateToUnlock = { navController.navigate(Routes.UNLOCK) },
-            )
-        }
-        composable(Routes.CREATE) {
-            CreateMasterPasswordScreen()
-        }
-        composable(Routes.UNLOCK) {
-            UnlockScreen(
-                onUnlocked = {
-                    navController.navigate(Routes.HOME) {
-                        popUpTo(Routes.WELCOME) { inclusive = true }
+    SharedTransitionLayout {
+        val sharedTransitionScope = this
+        NavHost(
+            navController = navController,
+            startDestination = Routes.WELCOME,
+            enterTransition = { enterFade() },
+            exitTransition = { exitFade() },
+            popEnterTransition = { enterFade() },
+            popExitTransition = { exitFade() },
+        ) {
+            composable(Routes.WELCOME) {
+                WelcomeScreen(
+                    onNavigateToCreate = { navController.navigate(Routes.CREATE) },
+                    onNavigateToUnlock = { navController.navigate(Routes.UNLOCK) },
+                )
+            }
+            composable(Routes.CREATE) {
+                CreateMasterPasswordScreen()
+            }
+            composable(Routes.UNLOCK) {
+                UnlockScreen(
+                    onUnlocked = {
+                        navController.navigate(Routes.HOME) {
+                            popUpTo(Routes.WELCOME) { inclusive = true }
+                        }
+                    },
+                )
+            }
+            composable(
+                Routes.HOME,
+                // Fade only on the shared-element edges (card <-> details title)
+                // so the flying element isn't dragged by a slide offset.
+                exitTransition = {
+                    if (targetState.destination.route == Routes.DETAILS) {
+                        fadeOut(tween(140))
+                    } else {
+                        exitFade()
                     }
                 },
-            )
-        }
-        composable(Routes.HOME) {
-            HomeScreen(
-                onAdd = { navController.navigate(Routes.ADD) },
-                onDetails = { id -> navController.navigate(Routes.details(id)) },
-                onLock = { authViewModel.lock() },
-                onBackup = { navController.navigate(Routes.BACKUP) },
-                onChangePassword = { navController.navigate(Routes.CHANGE_PASSWORD) },
-                onVaultDeleted = {
-                    navController.navigate(Routes.WELCOME) {
-                        popUpTo(Routes.WELCOME) { inclusive = true }
+                popEnterTransition = {
+                    if (initialState.destination.route == Routes.DETAILS) {
+                        fadeIn(tween(240))
+                    } else {
+                        enterFade()
                     }
                 },
-            )
-        }
-        composable(Routes.ADD) {
-            AddEditEntryScreen(
-                onDone = { navController.popBackStack() },
-            )
-        }
-        composable(
-            Routes.EDIT,
-            arguments = listOf(navArgument("id") { type = NavType.StringType }),
-        ) { backStackEntry ->
-            val id = backStackEntry.arguments?.getString("id").orEmpty()
-            AddEditEntryScreen(
-                entryId = id,
-                onDone = { navController.popBackStack() },
-            )
-        }
-        composable(
-            Routes.DETAILS,
-            arguments = listOf(navArgument("id") { type = NavType.StringType }),
-        ) { backStackEntry ->
-            val id = backStackEntry.arguments?.getString("id").orEmpty()
-            EntryDetailsScreen(
-                entryId = id,
-                onBack = { navController.popBackStack() },
-                onEdit = { navController.navigate(Routes.edit(id)) },
-            )
-        }
-        composable(Routes.GENERATOR) {
-            GeneratorScreen(onBack = { navController.popBackStack() })
-        }
-        composable(Routes.SETTINGS) {
-            SettingsScreen(
-                onBack = { navController.popBackStack() },
-                onBackup = { navController.navigate(Routes.BACKUP) },
-                onChangePassword = { navController.navigate(Routes.CHANGE_PASSWORD) },
-                onVaultDeleted = {
-                    navController.navigate(Routes.WELCOME) {
-                        popUpTo(Routes.WELCOME) { inclusive = true }
-                    }
-                },
-            )
-        }
-        composable(Routes.CHANGE_PASSWORD) {
-            ChangePasswordScreen(onDone = { navController.popBackStack() })
-        }
-        composable(Routes.BACKUP) {
-            BackupScreen(onBack = { navController.popBackStack() })
+            ) {
+                HomeScreen(
+                    onAdd = { navController.navigate(Routes.ADD) },
+                    onDetails = { id, title ->
+                        navController.navigate(Routes.details(id, title))
+                    },
+                    onLock = { authViewModel.lock() },
+                    onBackup = { navController.navigate(Routes.BACKUP) },
+                    onChangePassword = { navController.navigate(Routes.CHANGE_PASSWORD) },
+                    onVaultDeleted = {
+                        navController.navigate(Routes.WELCOME) {
+                            popUpTo(Routes.WELCOME) { inclusive = true }
+                        }
+                    },
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = this,
+                )
+            }
+            composable(Routes.ADD) {
+                AddEditEntryScreen(
+                    onDone = { navController.popBackStack() },
+                )
+            }
+            composable(
+                Routes.EDIT,
+                arguments = listOf(navArgument("id") { type = NavType.StringType }),
+            ) { backStackEntry ->
+                val id = backStackEntry.arguments?.getString("id").orEmpty()
+                AddEditEntryScreen(
+                    entryId = id,
+                    onDone = { navController.popBackStack() },
+                )
+            }
+            composable(
+                Routes.DETAILS,
+                arguments = listOf(
+                    navArgument("id") { type = NavType.StringType },
+                    navArgument("title") {
+                        type = NavType.StringType
+                        defaultValue = ""
+                    },
+                ),
+                enterTransition = { fadeIn(tween(240)) },
+                exitTransition = { fadeOut(tween(140)) },
+                popExitTransition = { fadeOut(tween(140)) },
+            ) { backStackEntry ->
+                val id = backStackEntry.arguments?.getString("id").orEmpty()
+                val title = backStackEntry.arguments?.getString("title").orEmpty()
+                EntryDetailsScreen(
+                    entryId = id,
+                    initialTitle = title,
+                    onBack = { navController.popBackStack() },
+                    onEdit = { navController.navigate(Routes.edit(id)) },
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = this,
+                )
+            }
+            composable(Routes.GENERATOR) {
+                GeneratorScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Routes.SETTINGS) {
+                SettingsScreen(
+                    onBack = { navController.popBackStack() },
+                    onBackup = { navController.navigate(Routes.BACKUP) },
+                    onChangePassword = { navController.navigate(Routes.CHANGE_PASSWORD) },
+                    onVaultDeleted = {
+                        navController.navigate(Routes.WELCOME) {
+                            popUpTo(Routes.WELCOME) { inclusive = true }
+                        }
+                    },
+                )
+            }
+            composable(Routes.CHANGE_PASSWORD) {
+                ChangePasswordScreen(onDone = { navController.popBackStack() })
+            }
+            composable(Routes.BACKUP) {
+                BackupScreen(onBack = { navController.popBackStack() })
+            }
         }
     }
 

@@ -1,5 +1,8 @@
 package com.example.passwordvault.ui.vault
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -64,10 +67,13 @@ import kotlinx.coroutines.launch
  * Cards reveal masked passwords on tap, swipe right to copy, swipe left to
  * delete. No scaffold of its own.
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun VaultPane(
-    onDetails: (String) -> Unit,
+    onDetails: (String, String) -> Unit,
     snackbarHostState: SnackbarHostState? = null,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     viewModel: VaultViewModel = hiltViewModel(),
     settingsViewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -127,7 +133,9 @@ fun VaultPane(
                         EntryCard(
                             entry = entry,
                             revealedPassword = revealed[entry.id],
-                            onClick = { onDetails(entry.id) },
+                            onClick = { onDetails(entry.id, entry.title) },
+                            sharedTransitionScope = sharedTransitionScope,
+                            animatedVisibilityScope = animatedVisibilityScope,
                             onToggleReveal = {
                                 if (revealed.containsKey(entry.id)) {
                                     revealed.remove(entry.id)
@@ -168,17 +176,27 @@ fun VaultPane(
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun EntryCard(
     entry: VaultEntrySummary,
     revealedPassword: String?,
     onClick: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     onToggleReveal: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
     val (avatarContainer, avatarOn) = avatarColors(entry.title, scheme)
     // Shared interaction source: ripple and press-scale respond to one gesture.
     val interactionSource = remember { MutableInteractionSource() }
+    // Flies into the details top-bar title (matched key) on navigation.
+    val sharedTitleModifier = with(sharedTransitionScope) {
+        Modifier.sharedElement(
+            rememberSharedContentState(key = "entry-${entry.id}"),
+            animatedVisibilityScope = animatedVisibilityScope,
+        )
+    }
     PassVaultCard(
         modifier = Modifier
             .pressScale(interactionSource)
@@ -216,7 +234,9 @@ private fun EntryCard(
                         style = MaterialTheme.typography.titleMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false),
+                        modifier = Modifier
+                            .weight(1f, fill = false)
+                            .then(sharedTitleModifier),
                     )
                     if (entry.favorite) {
                         Icon(

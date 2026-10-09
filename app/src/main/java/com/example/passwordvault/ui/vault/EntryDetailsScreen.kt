@@ -1,5 +1,8 @@
 package com.example.passwordvault.ui.vault
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -50,11 +53,15 @@ import com.example.passwordvault.ui.settings.SettingsViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun EntryDetailsScreen(
     entryId: String,
     onBack: () -> Unit,
     onEdit: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    initialTitle: String = "",
     viewModel: VaultViewModel = hiltViewModel(),
 ) {
     var entry by remember { mutableStateOf<VaultEntry?>(null) }
@@ -66,6 +73,15 @@ fun EntryDetailsScreen(
     val clipboard = rememberSecureClipboard()
     val settingsViewModel: SettingsViewModel = hiltViewModel()
     val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
+
+    // Matched with the vault card title (same key) so it flies in instead
+    // of swapping from the "Details" placeholder mid-transition.
+    val sharedTitleModifier = with(sharedTransitionScope) {
+        Modifier.sharedElement(
+            rememberSharedContentState(key = "entry-$entryId"),
+            animatedVisibilityScope = animatedVisibilityScope,
+        )
+    }
 
     LaunchedEffect(entryId) {
         entry = viewModel.getEntry(entryId)
@@ -84,7 +100,8 @@ fun EntryDetailsScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             PassVaultTopBar(
-                title = entry?.title ?: "Details",
+                title = entry?.title ?: initialTitle.ifBlank { "Details" },
+                titleModifier = sharedTitleModifier,
                 onBack = onBack,
                 actions = {
                     IconButton(onClick = onEdit) {

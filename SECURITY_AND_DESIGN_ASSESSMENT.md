@@ -2,7 +2,7 @@
 
 **Version assessed:** 1.6.0 (versionCode 14) · Android Kotlin + Jetpack Compose + Hilt + Room
 **Scope:** `app/src/main` (all 80+ Kotlin sources), manifest, Gradle config, repo hygiene.
-**Status:** **Remediation complete** — all security findings (HIGH/MEDIUM/LOW, P0–P2) fixed; P3 design system implemented with documented deferrals (shared-element, brand font). See [Part 3 — Implementation record](#part-3--implementation-record-p0p3).
+**Status:** **Remediation complete** — all security findings (HIGH/MEDIUM/LOW, P0–P2) fixed; P3 design system implemented (shared elements included after the toolchain upgrade; only brand font skipped, tablet two-pane deferred). See [Part 3 — Implementation record](#part-3--implementation-record-p0p3).
 **Verification:** `testDebugUnitTest` ✅ (all tests, incl. 8 new) · `lintDebug` ✅ (now abort-on-error) · `assembleRelease` ✅ (lintVital + R8 + signing with `bcprov-jdk18on`).
 
 ---
@@ -156,8 +156,8 @@ val glow1 by t.animateFloat(0f, 1f, infiniteRepeatable(tween(9000), RepeatMode.R
 | P1 | MEDIUM-2: EFF wordlist, dedupe, entropy from unique count | Small | ✅ Done (EFF large wordlist bundled: 7,776 words; 6 words ≈ 77.5 bits) |
 | P1 | MEDIUM-3: `BIOMETRIC_STRONG` | Small | ✅ Done |
 | P2 | MEDIUM-4/5: scoped DEK accessor; autofill URL-only matching | Medium | ✅ Done |
-| P2 | LOW batch (L1–L7), dependency bumps, lint re-enable | Medium | ✅ Done (AGP/material3 held back — see L4 deviation) |
-| P3 | Animated design system (items 1–12 above) | Medium–Large | ✅ Done (9 of 12 fully; 1 partial; 2 deliberately deferred — see Part 3) |
+| P2 | LOW batch (L1–L7), dependency bumps, lint re-enable | Medium | ✅ Done (hold-backs later superseded — see toolchain upgrade below) |
+| P3 | Animated design system (items 1–12 above) | Medium–Large | ✅ Done (10 of 12 fully incl. shared elements; 1 partial; 1 deliberately skipped — see Part 3) |
 
 ---
 
@@ -261,7 +261,7 @@ sources.
 | L1 | `AuthAttemptStore.kt` — lockout deadline stored **twice** (wall clock + `elapsedRealtime`); `lockoutRemainingMs` returns `max(...)` of both, so neither a clock change nor a reboot shortens the wait. (`lockoutForFailures` policy untouched — its unit tests still pass.) |
 | L2 | `VaultEntryDao.search` adds `ESCAPE '\'`; `VaultRepository.escapeLike` escapes `\`, `%`, `_` in user input. |
 | L3 | `checkReleaseBuilds = true`, `abortOnError = true` (two known-noisy checks stay disabled). Verified: `lintDebug` and the release build's `lintVitalRelease` both pass. |
-| L4 | **Conservative bump** in `libs.versions.toml`: `bcprov-jdk15on 1.70` → **`bcprov-jdk18on 1.78.1`** (retired artifact — the headline fix), Kotlin 1.9.21→**1.9.24** + matching KSP, AGP 8.2.0→**8.2.2**, Hilt 2.50→**2.52**, Compose BOM 2024.01→**2024.06**, composeCompiler 1.5.7→**1.5.14**, material3 1.2.0→**1.2.1**. *Deviations:* AGP held at 8.2.x (8.5.2 requires Gradle ≥8.7, wrapper is pinned at 8.5); material3 held at 1.2.1 (1.3.0 drags in the Compose 1.7 line, which needs a coordinated composeCompiler upgrade — see deferred items). |
+| L4 | **Conservative bump** in `libs.versions.toml`: `bcprov-jdk15on 1.70` → **`bcprov-jdk18on 1.78.1`** (retired artifact — the headline fix), Kotlin 1.9.21→**1.9.24** + matching KSP, AGP 8.2.0→**8.2.2**, Hilt 2.50→**2.52**, Compose BOM 2024.01→**2024.06**, composeCompiler 1.5.7→**1.5.14**, material3 1.2.0→**1.2.1**. *Deviations (later superseded):* AGP held at 8.2.x (needed Gradle ≥8.7); material3 held at 1.2.1 (1.3.0 needs Compose 1.7) — **both resolved by the toolchain upgrade below** (Gradle 8.9, AGP 8.7.3, Kotlin 2.0.21, BOM 2024.12.01, material3 1.3.1). |
 | L5 | `exportSchema = true` + `ksp { arg("room.schemaLocation", …) }`; schema exported to `app/schemas/…/VaultDatabase/1.json` (commit it). |
 | L6 | Dataset-auth PendingIntents now use a per-service **monotonic `AtomicInteger`** requestCode (random start) so `FLAG_UPDATE_CURRENT` can never graft one entry's extras onto another row; the unlock row gets a dedicated `RC_UNLOCK` constant + `FLAG_UPDATE_CURRENT` instead of `requestCode 0`. |
 | L7 | **`minSdk 26 → 30`.** *Tradeoff:* drops Android 8–10 devices; gains the Android 11 security baseline (package visibility, scoped storage, Class-3 biometric expectations). *Partial:* `InlinePresentation` **not** adopted — the `RemoteViews` dropdown path remains fully functional and the inline strip is cosmetic; noted as optional follow-up. |
@@ -277,7 +277,7 @@ New shared toolkit: `ui/components/Animations.kt` (`pressScale`,
 | 1 | Living gradient backdrop | ✅ `GradientBackground` — two out-of-phase infinite loops (14s linear-reverse drift + 11s breath) offset the radial glow centers/radii inside the existing `drawBehind` (draw-phase only, no blur/layer). |
 | 2 | Press feedback | ✅ `Modifier.pressScale` (spring, 0.97 floor) applied to `EntryCard` with a shared `MutableInteractionSource` so ripple + scale track one gesture. *Deviation:* `StatTile` is not interactive, so it received count-up (item 7) instead of a press effect. |
 | 3 | Staggered list entrances | ✅ `Modifier.staggeredEntrance(index)` on vault `LazyColumn` rows (fade + 32dp rise, 40ms/row, capped at 8 rows → ≤320ms). |
-| 4 | Shared-element entry → details | ⏸ **Deferred.** True `SharedTransitionLayout` requires Compose Animation 1.7 (BOM ≥ 2024.09) which cannot be paired safely with the pinned Kotlin 1.9.24 line without a build-verified compiler upgrade. Navigation continuity already exists: `AppNavHost` applies 220ms fade+slide enter/exit on every route. |
+| 4 | Shared-element entry → details | ✅ **Done** (after the toolchain upgrade): `SharedTransitionLayout` wraps `NavHost`; the vault card title and the details top-bar title share key `entry-{id}` (`Modifier.sharedElement` + `rememberSharedContentState`). The details route carries the title as a URL-encoded nav argument so the header shows the real name from frame one (no "Details" placeholder swap mid-flight); `HOME↔DETAILS` edges use fade-only transitions so the flying element isn't dragged by a slide offset. |
 | 5 | Unlock screen biometric pulse | ✅ Breathing halo behind the fingerprint button: 1.6s reversed loop animating scale (1.0→1.06) and ring alpha (0.10→0.28), drawn as a bordered circle in a fixed 96dp box (no layout shift). |
 | 6 | Generator choreography | ✅ `AnimatedContent` crossfade (220/140ms) on the generated password. ✅ **StrengthMeter is now one continuous bar** (animated fill width + color, replacing the 5 discrete segments). *Not done:* per-character shuffle effect (purely cosmetic). |
 | 7 | Dashboard count-up | ✅ `rememberCountUp` (0→target over 700ms, re-tweens from the current value when stats change) on the hero total and all four stat tiles. |
@@ -305,10 +305,36 @@ New shared toolkit: `ui/components/Animations.kt` (`pressScale`,
 | `gradlew lintDebug` | ✅ BUILD SUCCESSFUL with `abortOnError = true` |
 | `gradlew assembleRelease` | ✅ BUILD SUCCESSFUL — `lintVitalRelease` + R8 minification with `bcprov-jdk18on` + release signing |
 
+All three commands re-run green **after** the toolchain upgrade and shared-element work (Gradle 8.9, AGP 8.7.3, Kotlin 2.0.21, Compose BOM 2024.12.01).
+
+## Toolchain upgrade + shared elements (follow-up 3)
+| Component | Before | After |
+|-----------|--------|-------|
+| Gradle wrapper | 8.5 | **8.9** (AGP 8.7 requirement) |
+| Android Gradle Plugin | 8.2.2 | **8.7.3** (native compileSdk 35 support) |
+| Kotlin | 1.9.24 | **2.0.21** (K2 compiler; Compose compiler now ships inside Kotlin via the `org.jetbrains.kotlin.plugin.compose` plugin — `composeOptions.kotlinCompilerExtensionVersion` removed) |
+| KSP | 1.9.24-1.0.20 | **2.0.21-1.0.28** (Room 2.6.1 + Hilt 2.52 both verified under K2) |
+| Compose BOM | 2024.06.00 | **2024.12.01** (Animation/UI 1.7.x → `SharedTransitionLayout`) |
+| material3 | 1.2.1 (pinned) | **1.3.1** (BOM-managed — also delivers the M3 1.3 surfaces requested by design item 9) |
+| navigation-compose | 2.7.6 | **2.8.5** (verified `AnimatedContentScope` receiver for shared elements) |
+
+- **Shared elements**: `AppNavHost` wraps `NavHost` in `SharedTransitionLayout`;
+  `HomeScreen → VaultPane → EntryCard` and `EntryDetailsScreen` receive the
+  `SharedTransitionScope` (member-extension API) + `AnimatedVisibilityScope`.
+  `PassVaultTopBar` gained a `titleModifier` hook so the header title is the
+  matching node. `Routes.details(id, title)` URL-encodes the title into a
+  `title` query argument (declared with `defaultValue = ""`).
+- **Transition hygiene**: `HOME` uses fade-out/fade-in (not the default
+  220ms slide) only on the `details/{id}` edges so parent translation doesn't
+  compound the shared bounds animation; all other routes keep the original
+  fade+slide choreography.
+- Deferral note: per-character generator shuffle and error-shake remain
+  optional cosmetics (follow-up 4).
+
 ## Remaining / follow-ups (non-blocking)
 1. **Rotate the Play upload key** in the Console if this tree ever left the machine (manual).
 2. ✅ **EFF large wordlist bundled** — `EffWordList.kt`, all 7,776 words, tests enforce exact size + 77 bits at 6 words.
-3. **Compose 1.7 / BOM ≥ 2024.09 upgrade** (unlocks shared-element transitions and material3 1.3.x) — needs Kotlin/Compose-compiler pairing verification.
+3. ✅ **Toolchain upgrade landed** — Gradle 8.9 / AGP 8.7.3 / Kotlin 2.0.21 / KSP 2.0.21-1.0.28 / Compose BOM 2024.12.01 (shared elements + material3 1.3.1 unlocked); full suite, lint, and release build re-verified.
 4. Optional cosmetics: error-shake on failed unlock, per-character shuffle, hide-on-scroll nav bar, two-pane tablet layout, `InlinePresentation` autofill.
 5. ✅ **Four minor Kotlin warnings fixed** (unused parameter/variable, deprecated `isInsideSecureHardware` → `getSecurityLevel()` with API-level fallback).
 6. ✅ `app/schemas/…/1.json` **committed**.
