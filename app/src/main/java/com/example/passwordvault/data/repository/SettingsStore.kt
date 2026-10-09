@@ -17,6 +17,7 @@ data class AppSettings(
     val clipboardTimeoutSeconds: Int = 30,
     val biometricEnabled: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.DARK,
+    val useMaterialYou: Boolean = false,
 )
 
 /**
@@ -29,18 +30,24 @@ class SettingsStore(private val context: Context) {
         val clipboardTimeoutSeconds = intPreferencesKey("clipboard_timeout_seconds")
         val biometricEnabled = booleanPreferencesKey("biometric_enabled")
         val themeMode = stringPreferencesKey("theme_mode")
+        val useMaterialYou = booleanPreferencesKey("use_material_you")
     }
 
     val settings: Flow<AppSettings> = context.settingsDataStore.data
         .catch { emit(androidx.datastore.preferences.core.emptyPreferences()) }
         .map { prefs ->
+            val themeMode = prefs[Keys.themeMode]?.let {
+                runCatching { ThemeMode.valueOf(it) }.getOrDefault(ThemeMode.DARK)
+            } ?: ThemeMode.DARK
             AppSettings(
                 autoLockEnabled = prefs[Keys.autoLockEnabled] ?: true,
                 clipboardTimeoutSeconds = prefs[Keys.clipboardTimeoutSeconds] ?: 30,
                 biometricEnabled = prefs[Keys.biometricEnabled] ?: false,
-                themeMode = prefs[Keys.themeMode]?.let {
-                    runCatching { ThemeMode.valueOf(it) }.getOrDefault(ThemeMode.DARK)
-                } ?: ThemeMode.DARK,
+                themeMode = themeMode,
+                // Unset follows the legacy behavior exactly: dynamic color was
+                // only used in SYSTEM mode. Once the user touches the toggle,
+                // their explicit choice wins for every theme mode.
+                useMaterialYou = prefs[Keys.useMaterialYou] ?: (themeMode == ThemeMode.SYSTEM),
             )
         }
 
@@ -58,5 +65,9 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setThemeMode(mode: ThemeMode) {
         context.settingsDataStore.edit { it[Keys.themeMode] = mode.name }
+    }
+
+    suspend fun setUseMaterialYou(enabled: Boolean) {
+        context.settingsDataStore.edit { it[Keys.useMaterialYou] = enabled }
     }
 }

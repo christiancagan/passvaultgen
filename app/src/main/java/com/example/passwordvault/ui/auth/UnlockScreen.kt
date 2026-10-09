@@ -1,7 +1,14 @@
 package com.example.passwordvault.ui.auth
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -26,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -51,7 +59,10 @@ fun UnlockScreen(
     viewModel: AuthViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var password by rememberSaveable { mutableStateOf("") }
+    // NOTE: password is deliberately NOT rememberSaveable — saved instance
+    // state is persisted to disk by the system, which would leak the
+    // master password. Rotation simply clears the field.
+    var password by remember { mutableStateOf("") }
     var biometricsError by rememberSaveable { mutableStateOf<String?>(null) }
     val activity = LocalContext.current as? FragmentActivity
     val scheme = MaterialTheme.colorScheme
@@ -142,37 +153,76 @@ fun UnlockScreen(
 
                 // Fingerprint trigger: replaces the old "Unlock with biometrics" button.
                 // Always visible; tapping when biometrics are unavailable shows an error.
+                // A slow "breathing" halo behind the button draws the eye without
+                // a nagging blink (two phases: scale + alpha, 1.6s, reversed).
+                val haloTransition = rememberInfiniteTransition(label = "biometric-halo")
+                val haloScale by haloTransition.animateFloat(
+                    initialValue = 1f,
+                    targetValue = 1.06f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(1600, easing = FastOutSlowInEasing),
+                        repeatMode = RepeatMode.Reverse,
+                    ),
+                    label = "halo-scale",
+                )
+                val haloAlpha by haloTransition.animateFloat(
+                    initialValue = 0.10f,
+                    targetValue = 0.28f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(1600, easing = FastOutSlowInEasing),
+                        repeatMode = RepeatMode.Reverse,
+                    ),
+                    label = "halo-alpha",
+                )
                 Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(CircleShape)
-                        .background(
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                        )
-                        .clickable {
-                            biometricsError = null
-                            val act = activity
-                            if (act == null) {
-                                biometricsError = "Biometrics not available on this device"
-                            } else {
-                                viewModel.unlockWithBiometrics(act) { success ->
-                                    if (success) {
-                                        onUnlocked()
-                                    } else {
-                                        biometricsError =
-                                            "Biometric unlock failed or not available"
-                                    }
-                                }
-                            }
-                        },
+                    modifier = Modifier.size(96.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(
-                        Icons.Filled.Fingerprint,
-                        contentDescription = "Unlock with biometrics",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(40.dp),
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .graphicsLayer {
+                                scaleX = haloScale
+                                scaleY = haloScale
+                            }
+                            .border(
+                                width = 2.dp,
+                                color = scheme.primary.copy(alpha = haloAlpha),
+                                shape = CircleShape,
+                            ),
                     )
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(CircleShape)
+                            .background(
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                            )
+                            .clickable {
+                                biometricsError = null
+                                val act = activity
+                                if (act == null) {
+                                    biometricsError = "Biometrics not available on this device"
+                                } else {
+                                    viewModel.unlockWithBiometrics(act) { success ->
+                                        if (success) {
+                                            onUnlocked()
+                                        } else {
+                                            biometricsError =
+                                                "Biometric unlock failed or not available"
+                                        }
+                                    }
+                                }
+                            },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.Filled.Fingerprint,
+                            contentDescription = "Unlock with biometrics",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(40.dp),
+                        )
+                    }
                 }
 
                 biometricsError?.let {

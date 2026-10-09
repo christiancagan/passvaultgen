@@ -15,6 +15,18 @@ interface VaultEntryDao {
     @Query("SELECT * FROM vault_entries ORDER BY title COLLATE NOCASE ASC")
     fun observeAll(): Flow<List<VaultEntryEntity>>
 
+    /**
+     * Autofill candidate projection: never selects password/username/notes
+     * columns, so a fill request cannot pull secrets from the database.
+     * Only id/title/category/URL are returned; the URL is decrypted later
+     * (only when unlocked) by the repository.
+     */
+    @Query(
+        "SELECT id, title, category, urlCipher, urlNonce, favorite, createdAt, updatedAt " +
+            "FROM vault_entries ORDER BY title COLLATE NOCASE ASC",
+    )
+    fun observeAllWithUrl(): Flow<List<VaultEntryUrlProjection>>
+
     @Query("SELECT * FROM vault_entries WHERE id = :id LIMIT 1")
     suspend fun getById(id: String): VaultEntryEntity?
 
@@ -22,8 +34,8 @@ interface VaultEntryDao {
     suspend fun getAll(): List<VaultEntryEntity>
 
     @Query(
-        "SELECT * FROM vault_entries WHERE title LIKE '%' || :query || '%' " +
-            "OR category LIKE '%' || :query || '%' ORDER BY title COLLATE NOCASE ASC",
+        "SELECT * FROM vault_entries WHERE title LIKE '%' || :query || '%' ESCAPE '\\' " +
+            "OR category LIKE '%' || :query || '%' ESCAPE '\\' ORDER BY title COLLATE NOCASE ASC",
     )
     fun search(query: String): Flow<List<VaultEntryEntity>>
 

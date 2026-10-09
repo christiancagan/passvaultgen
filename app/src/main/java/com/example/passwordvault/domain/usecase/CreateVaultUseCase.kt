@@ -15,7 +15,13 @@ class CreateVaultUseCase @Inject constructor(
     private val metadataStore: VaultMetadataStore,
     private val session: VaultSession,
 ) {
-    suspend operator fun invoke(masterPassword: CharArray, params: Argon2Params = Argon2Params.DEFAULT) {
+    suspend operator fun invoke(
+        masterPassword: CharArray,
+        params: Argon2Params = Argon2Params.recommended(
+            maxMemoryBytes = Runtime.getRuntime().maxMemory(),
+            availableCores = Runtime.getRuntime().availableProcessors(),
+        ),
+    ) {
         val metadata = crypto.createVault(masterPassword, params)
         val dek = crypto.unlock(masterPassword, metadata)
         try {

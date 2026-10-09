@@ -45,8 +45,9 @@ class PasswordGeneratorTest {
 
     @Test
     fun `passphrase has requested word count`() {
-        val passphrase = generator.generatePassphrase(wordCount = 6, separator = "-")
-        assertThat(passphrase.split("-").size).isEqualTo(6)
+        // Split on space: hyphenated EFF entries ("t-shirt") contain "-".
+        val passphrase = generator.generatePassphrase(wordCount = 6, separator = " ")
+        assertThat(passphrase.split(" ")).hasSize(6)
     }
 
     @Test
@@ -63,5 +64,47 @@ class PasswordGeneratorTest {
         } catch (expected: IllegalArgumentException) {
             // expected
         }
+    }
+
+    @Test
+    fun `word list has no duplicates`() {
+        val list = PasswordGenerator.WORD_LIST
+        assertThat(list.toSet().size).isEqualTo(list.size)
+    }
+
+    @Test
+    fun `word list entries are lowercase diceware words`() {
+        val invalid = PasswordGenerator.WORD_LIST.filter { !it.matches(Regex("[a-z]+(-[a-z]+)*")) }
+        assertThat(invalid).isEmpty()
+    }
+
+    @Test
+    fun `word list is the EFF large list`() {
+        assertThat(PasswordGenerator.WORD_LIST).hasSize(7776)
+        assertThat(generator.passphraseEntropyBits(6)).isAtLeast(77.0)
+    }
+
+    @Test
+    fun `word list is large enough for meaningful entropy`() {
+        // Floor of 900 words => >= 9.8 bits/word, so a 6-word passphrase
+        // carries >= 58 bits even at the low end.
+        assertThat(PasswordGenerator.WORD_LIST.size).isAtLeast(900)
+        assertThat(generator.passphraseEntropyBits(6)).isAtLeast(55.0)
+    }
+
+    @Test
+    fun `passphrase words all come from the word list`() {
+        val passphrase = generator.generatePassphrase(wordCount = 12, separator = " ")
+        val words = passphrase.split(" ")
+        assertThat(words).hasSize(12)
+        for (word in words) {
+            assertThat(PasswordGenerator.WORD_LIST).contains(word)
+        }
+    }
+
+    @Test
+    fun `passphrase entropy scales with word count`() {
+        assertThat(generator.passphraseEntropyBits(6))
+            .isGreaterThan(generator.passphraseEntropyBits(5))
     }
 }

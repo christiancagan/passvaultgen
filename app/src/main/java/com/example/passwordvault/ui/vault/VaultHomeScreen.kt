@@ -1,7 +1,9 @@
 package com.example.passwordvault.ui.vault
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,7 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
@@ -46,11 +48,14 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.passwordvault.domain.model.VaultEntrySummary
+import com.example.passwordvault.ui.components.BottomNavClearance
 import com.example.passwordvault.ui.components.ColoredPasswordText
 import com.example.passwordvault.ui.components.EmptyState
 import com.example.passwordvault.ui.components.PassVaultCard
 import com.example.passwordvault.ui.components.SwipeableRow
+import com.example.passwordvault.ui.components.pressScale
 import com.example.passwordvault.ui.components.rememberSecureClipboard
+import com.example.passwordvault.ui.components.staggeredEntrance
 import com.example.passwordvault.ui.settings.SettingsViewModel
 import kotlinx.coroutines.launch
 
@@ -98,11 +103,16 @@ fun VaultPane(
             )
         } else {
             LazyColumn(
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 96.dp),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    bottom = BottomNavClearance,
+                ),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                items(entries, key = { it.id }) { entry ->
+                itemsIndexed(entries, key = { _, item -> item.id }) { index, entry ->
                     SwipeableRow(
+                        modifier = Modifier.staggeredEntrance(index),
                         onSwipeRight = {
                             scope.launch {
                                 val full = viewModel.getEntry(entry.id) ?: return@launch
@@ -167,8 +177,16 @@ private fun EntryCard(
 ) {
     val scheme = MaterialTheme.colorScheme
     val (avatarContainer, avatarOn) = avatarColors(entry.title, scheme)
+    // Shared interaction source: ripple and press-scale respond to one gesture.
+    val interactionSource = remember { MutableInteractionSource() }
     PassVaultCard(
-        modifier = Modifier.clickable(onClick = onClick),
+        modifier = Modifier
+            .pressScale(interactionSource)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
+                onClick = onClick,
+            ),
         containerColor = scheme.surfaceContainer,
     ) {
         Row(

@@ -79,36 +79,16 @@ class PasswordGenerator(
     }
 
     companion object {
-        /** A modest built-in word list for passphrases. */
-        val WORD_LIST = listOf(
-            "apple", "bridge", "candle", "dolphin", "eagle", "forest", "garden", "harbor",
-            "island", "jungle", "kettle", "lantern", "meadow", "nectar", "ocean", "pebble",
-            "quartz", "river", "saddle", "timber", "umber", "valley", "willow", "xenon",
-            "yellow", "zephyr", "anchor", "breeze", "cedar", "dune", "ember", "falcon",
-            "glacier", "hazel", "ivory", "jasmine", "kayak", "lilac", "maple", "north",
-            "orchid", "prairie", "quill", "raven", "sierra", "tundra", "urchin", "violet",
-            "walnut", "yonder", "zinc", "acorn", "birch", "coral", "delta", "elm",
-            "fern", "granite", "heron", "iris", "juniper", "koala", "larch", "moss",
-            "nimbus", "otter", "pine", "quarry", "reef", "spruce", "thistle", "vapor",
-            "wren", "yarrow", "zebra", "alder", "basalt", "canyon", "daisy", "echo",
-            "flint", "grove", "hollow", "indigo", "jade", "kelp", "lumen", "marble",
-            "nettle", "onyx", "petal", "quiver", "ridge", "stone", "tide", "valley",
-            "wheat", "yew", "zodiac", "amber", "bloom", "cliff", "drift", "ember",
-            "fjord", "gully", "heath", "inlet", "jewel", "knoll", "lagoon", "mist",
-            "nook", "oasis", "plain", "quill", "rune", "slate", "tor", "vale",
-            "wisp", "yarn", "zest", "arid", "bog", "crag", "dell", "eave",
-            "fen", "glen", "hill", "isle", "jot", "knob", "loam", "moor",
-            "nest", "oak", "pond", "quay", "rill", "sand", "tarn", "vale",
-            "wood", "yoke", "zone", "ash", "bay", "cove", "dune", "edge",
-            "fir", "gap", "hut", "ice", "jet", "key", "log", "mud",
-            "nut", "ore", "pit", "rag", "sap", "tin", "urn", "vat",
-            "wax", "yam", "zip", "arc", "bar", "cap", "dot", "ear",
-            "fan", "gem", "hat", "ink", "jar", "kit", "lid", "map",
-            "net", "oar", "pen", "rod", "sun", "tag", "urn", "van",
-            "web", "yak", "zoo", "ant", "bee", "cat", "dog", "eel",
-            "fox", "goat", "hen", "ibis", "jay", "kiwi", "lynx", "mole",
-            "newt", "owl", "pig", "quail", "rat", "seal", "toad", "vole",
-            "wolf", "yak", "zebu",
-        )
+        /**
+         * Built-in passphrase word list: the EFF large diceware list
+         * (7,776 entries — see [EffWordList]), deduplicated, lowercase a–z
+         * with hyphenated forms (e.g. "t-shirt"). Entropy for `n` words is
+         * `n * log2(WORD_LIST.size)` ≈ `n * 12.92` bits (6 words ≈ 77.5 bits).
+         */
+        val WORD_LIST: List<String> = EffWordList.ALL.distinct()
     }
+
+    /** Entropy of a passphrase of [wordCount] words from [WORD_LIST]. */
+    fun passphraseEntropyBits(wordCount: Int): Double =
+        wordCount * log2(WORD_LIST.size.toDouble())
 }

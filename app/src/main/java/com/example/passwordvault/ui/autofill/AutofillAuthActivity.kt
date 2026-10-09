@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -87,7 +88,10 @@ class AutofillAuthActivity : FragmentActivity() {
         setContent {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
             val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
-            PassVaultTheme(mode = settings.themeMode) {
+            PassVaultTheme(
+                mode = settings.themeMode,
+                dynamicColor = settings.useMaterialYou,
+            ) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -164,7 +168,9 @@ private fun AutofillUnlockDialog(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val unlocked by viewModel.isUnlocked.collectAsStateWithLifecycle()
     var passwordMode by rememberSaveable { mutableStateOf(false) }
-    var password by rememberSaveable { mutableStateOf("") }
+    // NOT rememberSaveable: saved state is persisted to disk; the master
+    // password must never be written there.
+    var password by remember { mutableStateOf("") }
     var submitted by rememberSaveable { mutableStateOf(false) }
 
     // Biometric first; any failure or dismissal falls back to master password.

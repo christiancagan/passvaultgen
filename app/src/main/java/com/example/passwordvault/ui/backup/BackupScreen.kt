@@ -24,8 +24,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -50,7 +50,9 @@ fun BackupScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var importPassword by rememberSaveable { mutableStateOf("") }
+    // NOT rememberSaveable: the backup master password must never be written
+    // to saved instance state on disk. Rotation clears the field.
+    var importPassword by remember { mutableStateOf("") }
 
     // SAF: user picks where to save the encrypted backup (no storage permission needed).
     val exportLauncher = rememberLauncherForActivityResult(

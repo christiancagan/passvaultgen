@@ -24,8 +24,10 @@ class VaultBackupRoundTripTest {
     private val exporter = VaultExporter(cipher, codec, b64)
     private val importer = VaultImporter(Argon2idKdf(), cipher, codec, b64)
 
-    // Tiny KDF params keep the test fast; the crypto path is identical.
-    private val params = Argon2Params(memoryKib = 8, iterations = 1, parallelism = 1)
+    // Floor-legal KDF params keep the test fast; the crypto path is identical.
+    // (memoryKib = 64 * 1024 matches VaultBackupCodec.MIN_MEMORY_KIB — the
+    // import validation rejects anything cheaper, so tests must use the floor.)
+    private val params = Argon2Params(memoryKib = 64 * 1024, iterations = 1, parallelism = 1)
 
     @Test
     fun `export then import restores entries and metadata`() {

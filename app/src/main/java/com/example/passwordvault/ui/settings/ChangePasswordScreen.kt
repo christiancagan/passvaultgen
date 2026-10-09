@@ -39,9 +39,11 @@ fun ChangePasswordScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val actionError by viewModel.actionError.collectAsStateWithLifecycle()
-    var current by rememberSaveable { mutableStateOf("") }
-    var newPassword by rememberSaveable { mutableStateOf("") }
-    var confirm by rememberSaveable { mutableStateOf("") }
+    // NOT rememberSaveable: saved state is persisted to disk; passwords
+    // must never be written there.
+    var current by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+    var confirm by remember { mutableStateOf("") }
     var isBusy by rememberSaveable { mutableStateOf(false) }
 
     val strength = remember(newPassword) {

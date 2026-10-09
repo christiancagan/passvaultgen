@@ -27,6 +27,28 @@ data class Argon2Params(
     companion object {
         /** Conservative defaults for a low-end device (~64 MiB, ~0.5s). */
         val DEFAULT = Argon2Params(memoryKib = 64 * 1024, iterations = 3, parallelism = 1)
+
+        /**
+         * Parameters scaled to the device's capability.
+         *
+         * Modern guidance (2026) is 128–256 MiB with t=3–4 on capable
+         * hardware. We target ~1/4 of the runtime's max heap, capped at
+         * 256 MiB, never below [DEFAULT], and use up to 4 lanes.
+         *
+         * Callers pass `Runtime.getRuntime().maxMemory()` and
+         * `Runtime.getRuntime().availableProcessors()`; kept as parameters
+         * so it is unit-testable.
+         */
+        fun recommended(
+            maxMemoryBytes: Long,
+            availableCores: Int,
+        ): Argon2Params {
+            val byMemory = (maxMemoryBytes / 4 / 1024).toInt()
+            val memoryKib = byMemory.coerceIn(DEFAULT.memoryKib, 256 * 1024)
+            val parallelism = availableCores.coerceIn(1, 4)
+            val iterations = if (memoryKib >= 128 * 1024) 3 else DEFAULT.iterations
+            return Argon2Params(memoryKib, iterations, parallelism)
+        }
     }
 }
 

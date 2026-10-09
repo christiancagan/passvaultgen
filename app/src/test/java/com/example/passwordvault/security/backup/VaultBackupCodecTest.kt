@@ -64,4 +64,50 @@ class VaultBackupCodecTest {
             // expected
         }
     }
+
+    @Test
+    fun `trivially cheap kdf is rejected on import`() {
+        // A crafted 8 KiB Argon2 would make offline brute-force instant;
+        // the import floor must reject it before any key derivation runs.
+        val bad = codec.encodeBackup(
+            sampleBackup().copy(kdfParams = BackupKdfParams(memoryKib = 8, iterations = 3, parallelism = 1)),
+        )
+        try {
+            codec.decodeBackup(bad)
+            throw AssertionError("expected validation to fail")
+        } catch (expected: IllegalArgumentException) {
+            // expected
+        }
+    }
+
+    @Test
+    fun `oversized kdf memory is rejected on import`() {
+        // A crafted 2 GiB request must not be able to OOM the device.
+        val bad = codec.encodeBackup(
+            sampleBackup().copy(
+                kdfParams = BackupKdfParams(memoryKib = 2 * 1024 * 1024, iterations = 3, parallelism = 1),
+            ),
+        )
+        try {
+            codec.decodeBackup(bad)
+            throw AssertionError("expected validation to fail")
+        } catch (expected: IllegalArgumentException) {
+            // expected
+        }
+    }
+
+    @Test
+    fun `zero iterations is rejected on import`() {
+        val bad = codec.encodeBackup(
+            sampleBackup().copy(
+                kdfParams = BackupKdfParams(memoryKib = 65536, iterations = 0, parallelism = 1),
+            ),
+        )
+        try {
+            codec.decodeBackup(bad)
+            throw AssertionError("expected validation to fail")
+        } catch (expected: IllegalArgumentException) {
+            // expected
+        }
+    }
 }

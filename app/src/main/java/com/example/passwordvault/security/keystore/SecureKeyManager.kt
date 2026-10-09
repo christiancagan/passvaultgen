@@ -1,5 +1,6 @@
 package com.example.passwordvault.security.keystore
 
+import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyInfo
 import android.security.keystore.KeyProperties
@@ -56,7 +57,14 @@ class SecureKeyManager {
         return try {
             val factory = KeyFactory.getInstance(entry.secretKey.algorithm, ANDROID_KEYSTORE)
             val keyInfo = factory.getKeySpec(entry.secretKey, KeyInfo::class.java)
-            keyInfo.isInsideSecureHardware
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                // 3 = TEE, 4 = StrongBox (KeyInfo.SECURITY_LEVEL_* are @hide);
+                // both count as secure hardware, matching the old boolean.
+                keyInfo.securityLevel >= 3
+            } else {
+                @Suppress("DEPRECATION")
+                keyInfo.isInsideSecureHardware
+            }
         } catch (e: Exception) {
             false
         }

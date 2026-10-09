@@ -66,6 +66,11 @@ class PassVaultAutofillService : android.service.autofill.AutofillService() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
+    /** Unique requestCodes for dataset auth PendingIntents (see [authIntentSender]). */
+    private val datasetRequestCode = java.util.concurrent.atomic.AtomicInteger(
+        java.util.concurrent.ThreadLocalRandom.current().nextInt(1 shl 24),
+    )
+
     override fun onDestroy() {
         super.onDestroy()
         scope.cancel()
@@ -201,8 +206,17 @@ class PassVaultAutofillService : android.service.autofill.AutofillService() {
         val appLabel = appLabelOf(packageName)
 
         val candidates = if (unlocked) {
-            repository.getAllDecrypted().map {
-                AutofillCandidate(id = it.id, title = it.title, url = it.url)
+            // URL-only projection: decrypts just the url field per entry —
+            // passwords/usernames/notes are never pulled for a fill request.
+            try {
+                repository.observeUrlCandidates().first().map {
+                    AutofillCandidate(id = it.id, title = it.title, url = it.url)
+                }
+            } catch (locked: com.example.passwordvault.security.crypto.VaultLockedException) {
+                // Session dropped between the isUnlocked check and the read.
+                repository.observeAll().first().map {
+                    AutofillCandidate(id = it.id, title = it.title, url = "")
+                }
             }
         } else {
             // Locked: summaries carry no secrets, so title matching is safe.
@@ -260,7 +274,10 @@ class PassVaultAutofillService : android.service.autofill.AutofillService() {
         fields: LoginFields,
     ) = PendingIntent.getActivity(
         this,
-        (entryId + fields.allIds().joinToString { it.toString() }).hashCode(),
+        // Monotonic per-service counter: guarantees each dataset row owns a
+        // distinct requestCode, so FLAG_UPDATE_CURRENT can never graft one
+        // entry's EXTRA_ENTRY_ID onto another row's PendingIntent.
+        datasetRequestCode.incrementAndGet(),
         Intent(this, AutofillAuthActivity::class.java).apply {
             putExtra(AutofillAuthActivity.EXTRA_ENTRY_ID, entryId)
             putExtra(AutofillAuthActivity.EXTRA_ENTRY_TITLE, entryTitle)
@@ -295,9 +312,9 @@ class PassVaultAutofillService : android.service.autofill.AutofillService() {
 
     private fun unlockIntentSender() = PendingIntent.getActivity(
         this,
-        0,
+        RC_UNLOCK,
         Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-        PendingIntent.FLAG_IMMUTABLE,
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     ).intentSender
 
     private fun presentation(text: String): RemoteViews =
@@ -347,5 +364,12 @@ class PassVaultAutofillService : android.service.autofill.AutofillService() {
 
     companion object {
         const val MAX_DATASETS = 5
+
+        /**
+         * Dedicated requestCode for the unlock row so it can never collide
+         * with another app's requestCode-0 PendingIntent (which would silently
+         * return someone else's intent).
+         */
+        const val RC_UNLOCK = 0x5041_0001
     }
 }

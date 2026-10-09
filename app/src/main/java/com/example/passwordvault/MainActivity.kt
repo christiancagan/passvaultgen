@@ -35,7 +35,10 @@ class MainActivity : FragmentActivity() {
         setContent {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
             val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
-            PassVaultTheme(mode = settings.themeMode) {
+            PassVaultTheme(
+                mode = settings.themeMode,
+                dynamicColor = settings.useMaterialYou,
+            ) {
                 GradientBackground {
                     AppNavHost()
                 }

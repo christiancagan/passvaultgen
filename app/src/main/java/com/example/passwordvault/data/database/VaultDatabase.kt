@@ -8,7 +8,9 @@ import androidx.room.RoomDatabase
 @Database(
     entities = [VaultEntryEntity::class],
     version = 1,
-    exportSchema = false,
+    // Export JSON schemas to app/schemas so future migrations can be
+    // reviewed against the previous schema (see ksp room.schemaLocation).
+    exportSchema = true,
 )
 abstract class VaultDatabase : RoomDatabase() {
     abstract fun vaultEntryDao(): VaultEntryDao

@@ -12,10 +12,13 @@ import javax.crypto.Cipher
  */
 class BiometricAuthenticator(private val activity: FragmentActivity) {
 
-    /** Returns true if the device can authenticate with biometrics or device credential. */
+    /** Returns true if the device can authenticate with strong biometrics or device credential. */
     fun canAuthenticate(): Boolean {
         val result = BiometricManager.from(activity).canAuthenticate(
-            BiometricManager.Authenticators.BIOMETRIC_WEAK or
+            // STRONG (Class 3) only: a password vault must not unlock via
+            // spoofable (weak) biometrics. Device credential remains the
+            // fallback when no strong biometric is enrolled.
+            BiometricManager.Authenticators.BIOMETRIC_STRONG or
                 BiometricManager.Authenticators.DEVICE_CREDENTIAL,
         )
         return result == BiometricManager.BIOMETRIC_SUCCESS

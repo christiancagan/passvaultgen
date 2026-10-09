@@ -57,6 +57,10 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settingsStore.setThemeMode(mode) }
     }
 
+    fun setUseMaterialYou(enabled: Boolean) {
+        viewModelScope.launch { settingsStore.setUseMaterialYou(enabled) }
+    }
+
     /** Strong 20-character password for "generate" buttons. */
     fun generatePassword(): String = passwordGenerator.generate(PasswordOptions())
 

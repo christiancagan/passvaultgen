@@ -22,7 +22,6 @@ class ExportVaultUseCase @Inject constructor(
     suspend operator fun invoke(): ByteArray {
         val metadata = metadataStore.metadata.firstOrNull()
             ?: throw IllegalStateException("No vault exists")
-        val dek = session.requireDek()
         val entries = repository.getAllDecrypted().map {
             BackupEntry(
                 title = it.title,
@@ -37,6 +36,6 @@ class ExportVaultUseCase @Inject constructor(
                 updatedAt = it.updatedAt,
             )
         }
-        return exporter.export(dek, entries, metadata)
+        return session.withDek { dek -> exporter.export(dek, entries, metadata) }
     }
 }

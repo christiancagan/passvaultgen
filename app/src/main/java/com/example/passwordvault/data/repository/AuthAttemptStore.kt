@@ -1,6 +1,7 @@
 package com.example.passwordvault.data.repository
 
 import android.content.Context
+import android.os.SystemClock
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
@@ -15,6 +16,8 @@ data class AuthAttemptState(
     val failedAttempts: Int = 0,
     /** Epoch millis until which unlocking is blocked. 0 = not blocked. */
     val lockoutUntil: Long = 0,
+    /** Elapsed-realtime deadline; unaffected by wall-clock changes. */
+    val lockoutUntilElapsed: Long = 0,
 )
 
 /**
@@ -25,25 +28,39 @@ data class AuthAttemptState(
  * failures, escalating lockouts apply (30s → 1min → 5min → 15min cap). A
  * successful unlock resets the counter. The state persists across process
  * restarts so killing the app does not reset it.
+ *
+ * The lockout deadline is stored twice — wall-clock and elapsed-realtime — and
+ * the remaining block is the max of both, so neither moving the system clock
+ * forward nor a combination trick shortens the wait.
  */
 class AuthAttemptStore(private val context: Context) {
 
     private object Keys {
         val failedAttempts = intPreferencesKey("failed_attempts")
         val lockoutUntil = longPreferencesKey("lockout_until")
+        val lockoutUntilElapsed = longPreferencesKey("lockout_until_elapsed")
     }
 
     val state: Flow<AuthAttemptState> = context.authAttemptsDataStore.data.map { prefs ->
         AuthAttemptState(
             failedAttempts = prefs[Keys.failedAttempts] ?: 0,
             lockoutUntil = prefs[Keys.lockoutUntil] ?: 0,
+            lockoutUntilElapsed = prefs[Keys.lockoutUntilElapsed] ?: 0,
         )
     }
 
-    /** Returns remaining block time in millis, or 0 if unlocking is allowed. */
+    /**
+     * Returns remaining block time in millis, or 0 if unlocking is allowed.
+     * Takes the larger of the wall-clock and elapsed-realtime readings.
+     */
     suspend fun lockoutRemainingMs(nowMs: Long = System.currentTimeMillis()): Long {
-        val until = context.authAttemptsDataStore.data.first()[Keys.lockoutUntil] ?: 0
-        return (until - nowMs).coerceAtLeast(0)
+        val prefs = context.authAttemptsDataStore.data.first()
+        val until = prefs[Keys.lockoutUntil] ?: 0
+        val untilElapsed = prefs[Keys.lockoutUntilElapsed] ?: 0
+        val wallRemaining = (until - nowMs).coerceAtLeast(0)
+        val elapsedRemaining =
+            (untilElapsed - SystemClock.elapsedRealtime()).coerceAtLeast(0)
+        return maxOf(wallRemaining, elapsedRemaining)
     }
 
     /**
@@ -54,9 +71,12 @@ class AuthAttemptStore(private val context: Context) {
         val prefs = context.authAttemptsDataStore.data.first()
         val failed = (prefs[Keys.failedAttempts] ?: 0) + 1
         val lockoutMs = lockoutForFailures(failed)
+        val elapsedBase = SystemClock.elapsedRealtime()
         context.authAttemptsDataStore.edit {
             it[Keys.failedAttempts] = failed
             it[Keys.lockoutUntil] = if (lockoutMs > 0) nowMs + lockoutMs else 0
+            it[Keys.lockoutUntilElapsed] =
+                if (lockoutMs > 0) elapsedBase + lockoutMs else 0
         }
         return lockoutMs
     }
@@ -65,6 +85,7 @@ class AuthAttemptStore(private val context: Context) {
         context.authAttemptsDataStore.edit {
             it[Keys.failedAttempts] = 0
             it[Keys.lockoutUntil] = 0
+            it[Keys.lockoutUntilElapsed] = 0
         }
     }
 

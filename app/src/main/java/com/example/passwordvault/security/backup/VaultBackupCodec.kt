@@ -43,9 +43,14 @@ class VaultBackupCodec(private val gson: Gson) {
     private fun validate(backup: VaultBackup) {
         require(backup.version == SUPPORTED_VERSION) { "Unsupported backup version" }
         require(backup.kdf == KDF_ARGON2ID) { "Unsupported KDF" }
-        require(backup.kdfParams.memoryKib >= 8) { "Invalid KDF memory parameter" }
-        require(backup.kdfParams.iterations >= 1) { "Invalid KDF iteration parameter" }
-        require(backup.kdfParams.parallelism >= 1) { "Invalid KDF parallelism parameter" }
+        // A crafted backup must not be able to force a trivially cheap KDF
+        // (an 8 KiB Argon2 makes offline master-password brute-force
+        // effectively instant), nor a value that OOMs the device.
+        require(backup.kdfParams.memoryKib in MIN_MEMORY_KIB..MAX_MEMORY_KIB) {
+            "Invalid KDF memory parameter"
+        }
+        require(backup.kdfParams.iterations in 1..10) { "Invalid KDF iteration parameter" }
+        require(backup.kdfParams.parallelism in 1..8) { "Invalid KDF parallelism parameter" }
         require(backup.salt.isNotBlank()) { "Missing salt" }
         require(backup.wrappedDek.isNotBlank()) { "Missing wrapped DEK" }
         require(backup.dekNonce.isNotBlank()) { "Missing DEK nonce" }
@@ -57,5 +62,9 @@ class VaultBackupCodec(private val gson: Gson) {
         const val SUPPORTED_VERSION = 1
         const val KDF_ARGON2ID = "argon2id"
         const val MAX_BACKUP_SIZE = 10 * 1024 * 1024 // 10 MiB
+
+        /** Import floor/ceiling: matches Argon2Params.DEFAULT .. 1 GiB. */
+        const val MIN_MEMORY_KIB = 64 * 1024
+        const val MAX_MEMORY_KIB = 1024 * 1024
     }
 }

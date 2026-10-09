@@ -29,8 +29,10 @@ class GeneratorViewModel @Inject constructor(
         val state = _uiState.value
         if (state.passphraseMode) {
             val passphrase = generator.generatePassphrase(wordCount = state.wordCount)
-            val entropy = state.wordCount * log2(PasswordGenerator.WORD_LIST.size.toDouble())
-            _uiState.value = state.copy(password = passphrase, entropyBits = entropy)
+            _uiState.value = state.copy(
+                password = passphrase,
+                entropyBits = generator.passphraseEntropyBits(state.wordCount),
+            )
         } else {
             val password = generator.generate(state.options)
             val charsetSize = generator.charsetSize(state.options)
@@ -44,12 +46,20 @@ class GeneratorViewModel @Inject constructor(
     }
 
     fun setPassphraseMode(enabled: Boolean) {
-        _uiState.value = _uiState.value.copy(passphraseMode = enabled)
+        _uiState.value = _uiState.value.copy(
+            passphraseMode = enabled,
+            wordCount = _uiState.value.wordCount.coerceIn(MIN_WORDS, MAX_WORDS),
+        )
     }
 
     fun setWordCount(count: Int) {
-        _uiState.value = _uiState.value.copy(wordCount = count)
+        _uiState.value = _uiState.value.copy(
+            wordCount = count.coerceIn(MIN_WORDS, MAX_WORDS),
+        )
     }
 
-    private fun log2(x: Double): Double = kotlin.math.log2(x)
+    companion object {
+        const val MIN_WORDS = 4
+        const val MAX_WORDS = 10
+    }
 }

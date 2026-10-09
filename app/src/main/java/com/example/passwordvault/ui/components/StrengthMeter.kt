@@ -4,10 +4,11 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
@@ -31,8 +32,9 @@ fun scoreFromEntropy(bits: Double): Int = when {
 }
 
 /**
- * Five-segment animated strength meter with a semantic color and label.
- * Segments light up with a tween so changes read as motion, not jumps.
+ * Continuous animated strength bar with a semantic color and label.
+ * The fill width sweeps to the new score with a tween so changes read as
+ * motion, not jumps.
  */
 @Composable
 fun StrengthMeter(
@@ -42,31 +44,30 @@ fun StrengthMeter(
 ) {
     val barColor = strengthBarColor(score)
     val textColor = strengthTextColor(score)
+    val fill = animateFloatAsState(
+        targetValue = (score + 1) / 5f,
+        animationSpec = tween(500),
+        label = "strength-fill",
+    )
+    val animatedColor by animateColorAsState(
+        targetValue = barColor,
+        animationSpec = tween(500),
+        label = "strength-color",
+    )
     Column(modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(MaterialTheme.shapes.small)
+                .background(animatedColor.copy(alpha = 0.22f)),
         ) {
-            val fill = animateFloatAsState(
-                targetValue = (score + 1) / 5f,
-                animationSpec = tween(500),
-                label = "strength-fill",
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(fill.value)
+                    .background(animatedColor),
             )
-            val animatedColor by animateColorAsState(
-                targetValue = barColor,
-                animationSpec = tween(500),
-                label = "strength-color",
-            )
-            repeat(5) { index ->
-                val segmentProgress = ((fill.value * 5f) - index).coerceIn(0f, 1f)
-                Spacer(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(6.dp)
-                        .clip(MaterialTheme.shapes.small)
-                        .background(animatedColor.copy(alpha = 0.22f + 0.78f * segmentProgress)),
-                )
-            }
         }
         Spacer(Modifier.height(6.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {

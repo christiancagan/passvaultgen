@@ -39,4 +39,21 @@ class VaultSession {
 
     /** Returns the DEK or throws [VaultLockedException] if locked. */
     fun requireDek(): ByteArray = dek ?: throw VaultLockedException()
+
+    /**
+     * Runs [block] with a private, zeroed copy of the DEK.
+     *
+     * Preferred over [requireDek]: the caller never holds a reference to
+     * the live DEK array, so it cannot leak or mutate long-lived key
+     * material. The copy is zeroed on exit (even on exception).
+     */
+    fun <T> withDek(block: (ByteArray) -> T): T {
+        val live = dek ?: throw VaultLockedException()
+        val copy = live.copyOf()
+        return try {
+            block(copy)
+        } finally {
+            copy.fill(0)
+        }
+    }
 }

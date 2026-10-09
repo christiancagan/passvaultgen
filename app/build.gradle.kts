@@ -8,6 +8,10 @@ plugins {
 import java.io.FileInputStream
 import java.util.Properties
 
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 base {
     archivesName.set("passvaultgen")
 }
@@ -18,36 +22,57 @@ android {
 
     defaultConfig {
         applicationId = "com.example.passwordvault"
-        minSdk = 26
+        // 30 (Android 11): drops Android 8-10 devices but aligns with the
+        // platform baseline where scoped storage, biometric Class 3
+        // requirements, and package-visibility rules are fully enforced.
+        minSdk = 30
         targetSdk = 35
-        versionCode = 14
-        versionName = "1.6.0"
+        versionCode = 15
+        versionName = "1.7.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // Release signing comes from keystore.properties (see keystore.properties.example).
-    // The keystore and its passwords are NEVER committed to version control.
-    // Without keystore.properties, the release build stays unsigned (debug key) and
+    // Release signing. Secrets are NEVER committed to version control.
+    // Order of precedence:
+    //   1. CI environment variables (PV_STORE_FILE, PV_STORE_PASSWORD,
+    //      PV_KEY_ALIAS, PV_KEY_PASSWORD) â€” the only supported path on
+    //      shared/CI machines.
+    //   2. A local, git-ignored keystore.properties (developer machines).
+    // Without either, the release build stays unsigned (debug key) and
     // must not be published.
+    val envStoreFile = System.getenv("PV_STORE_FILE")
+    val envStorePassword = System.getenv("PV_STORE_PASSWORD")
+    val envKeyAlias = System.getenv("PV_KEY_ALIAS")
+    val envKeyPassword = System.getenv("PV_KEY_PASSWORD")
     val keystorePropsFile = rootProject.file("keystore.properties")
-    val hasReleaseKey = keystorePropsFile.exists()
+    val hasReleaseKey = (envStoreFile != null && envStorePassword != null) ||
+        keystorePropsFile.exists()
     if (hasReleaseKey) {
-        val keystoreProps = Properties()
-        FileInputStream(keystorePropsFile).use { keystoreProps.load(it) }
         signingConfigs {
             create("release") {
-                storeFile = file(keystoreProps.getProperty("storeFile"))
-                storePassword = keystoreProps.getProperty("storePassword")
-                keyAlias = keystoreProps.getProperty("keyAlias")
-                keyPassword = keystoreProps.getProperty("keyPassword")
+                if (envStoreFile != null && envStorePassword != null) {
+                    storeFile = file(envStoreFile)
+                    storePassword = envStorePassword
+                    keyAlias = envKeyAlias ?: "passvaultgen"
+                    keyPassword = envKeyPassword ?: envStorePassword
+                } else {
+                    val keystoreProps = Properties()
+                    FileInputStream(keystorePropsFile).use { keystoreProps.load(it) }
+                    storeFile = file(keystoreProps.getProperty("storeFile"))
+                    storePassword = keystoreProps.getProperty("storePassword")
+                    keyAlias = keystoreProps.getProperty("keyAlias")
+                    keyPassword = keystoreProps.getProperty("keyPassword")
+                }
             }
         }
     }
 
     lint {
+        // Two known-noisy checks stay disabled; everything else is enforced,
+        // including on release builds (Gradle defaults, restored on purpose).
         disable += listOf("QueryPermissionsNeedAppAccess", "HardcodedDebugMode")
-        checkReleaseBuilds = false
-        abortOnError = false
+        checkReleaseBuilds = true
+        abortOnError = true
     }
 
     testOptions {

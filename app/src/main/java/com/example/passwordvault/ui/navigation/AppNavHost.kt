@@ -91,13 +91,7 @@ fun AppNavHost() {
             )
         }
         composable(Routes.CREATE) {
-            CreateMasterPasswordScreen(
-                onDone = {
-                    navController.navigate(Routes.HOME) {
-                        popUpTo(Routes.WELCOME) { inclusive = true }
-                    }
-                },
-            )
+            CreateMasterPasswordScreen()
         }
         composable(Routes.UNLOCK) {
             UnlockScreen(

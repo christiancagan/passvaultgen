@@ -1,5 +1,10 @@
 package com.example.passwordvault.ui.generator
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
+import com.example.passwordvault.ui.components.BottomNavClearance
 import com.example.passwordvault.ui.components.BubbleSlider
 import com.example.passwordvault.ui.components.ColoredPasswordText
 import com.example.passwordvault.ui.components.HapticSwitch
@@ -138,9 +144,16 @@ fun GeneratorPane(
                     label = "Word count",
                     value = uiState.wordCount,
                     onValueChange = viewModel::setWordCount,
-                    valueRange = 3..10,
-                    steps = 6,
+                    valueRange = GeneratorViewModel.MIN_WORDS..GeneratorViewModel.MAX_WORDS,
+                    steps = GeneratorViewModel.MAX_WORDS - GeneratorViewModel.MIN_WORDS,
                 )
+                if (uiState.entropyBits < 50) {
+                    Text(
+                        "Add more words — passphrases under 50 bits of entropy are weak.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
             } else {
                 BubbleSlider(
                     label = "Length",
@@ -164,7 +177,7 @@ fun GeneratorPane(
                 }
             }
         }
-        Spacer(Modifier.height(96.dp))
+        Spacer(Modifier.height(BottomNavClearance))
     }
 }
 
@@ -191,7 +204,6 @@ private fun OutputCard(
     clipboardTimeout: Int,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -210,11 +222,21 @@ private fun OutputCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(8.dp))
-            ColoredPasswordText(
-                password = password,
-                size = 22.sp,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            // Crossfade so regeneration reads as a slot-machine flip rather
+            // than an instant text swap.
+            AnimatedContent(
+                targetState = password,
+                transitionSpec = {
+                    fadeIn(tween(220)) togetherWith fadeOut(tween(140))
+                },
+                label = "generated-password",
+            ) { value ->
+                ColoredPasswordText(
+                    password = value,
+                    size = 22.sp,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
             Spacer(Modifier.height(12.dp))
             Text(
                 "≈${"%.1f".format(entropyBits)} bits of entropy",

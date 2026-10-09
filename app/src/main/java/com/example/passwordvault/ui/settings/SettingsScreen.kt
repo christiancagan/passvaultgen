@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.passwordvault.ui.components.BottomNavClearance
 import com.example.passwordvault.ui.components.HapticSwitch
 import com.example.passwordvault.ui.components.PassVaultCard
 import com.example.passwordvault.ui.components.PassVaultTopBar
@@ -108,6 +109,19 @@ fun SettingsPane(
                 selected = settings.themeMode,
                 onSelect = viewModel::setThemeMode,
             )
+            SettingToggle(
+                label = "Material You colors",
+                checked = settings.useMaterialYou,
+                onCheckedChange = viewModel::setUseMaterialYou,
+            )
+            if (settings.useMaterialYou) {
+                Text(
+                    "Colors follow your wallpaper (Android 12+). Turn off to keep " +
+                        "the PassVaultGen brand palette.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
 
         PassVaultCard(title = "Security") {
@@ -210,7 +224,9 @@ fun SettingsPane(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(bottom = 96.dp))
+        androidx.compose.foundation.layout.Spacer(
+            modifier = Modifier.padding(bottom = BottomNavClearance),
+        )
     }
 
     if (confirmDelete) {

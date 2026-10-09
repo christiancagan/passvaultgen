@@ -87,9 +87,13 @@ private val BrandLight = lightColorScheme(
 )
 
 /**
- * App theme. Dark is the design default; [ThemeMode.SYSTEM] additionally opts
- * into Android 12+ dynamic color, falling back to the brand palette when the
- * explicit LIGHT/DARK modes are chosen or dynamic color is unavailable.
+ * App theme. Dark is the design default; [mode] selects LIGHT/DARK/SYSTEM.
+ *
+ * [dynamicColor] is the user's explicit "Material You" toggle (Settings ->
+ * Appearance): when enabled and the device is Android 12+, wallpaper-derived
+ * dynamic colors replace the brand palette in every theme mode. When unset
+ * the store defaults it to legacy behavior (dynamic color only in SYSTEM
+ * mode), so upgrading users see no change until they touch the toggle.
  */
 @Composable
 fun PassVaultTheme(
@@ -103,8 +107,7 @@ fun PassVaultTheme(
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
     }
     val context = LocalContext.current
-    val useDynamic = mode == ThemeMode.SYSTEM &&
-        dynamicColor &&
+    val useDynamic = dynamicColor &&
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val colorScheme = when {
         useDynamic && darkTheme -> dynamicDarkColorScheme(context)

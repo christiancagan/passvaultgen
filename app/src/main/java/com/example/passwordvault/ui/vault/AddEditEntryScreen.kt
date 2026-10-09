@@ -22,7 +22,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,14 +43,17 @@ fun AddEditEntryScreen(
     entryId: String? = null,
     viewModel: VaultViewModel = hiltViewModel(),
 ) {
-    var title by rememberSaveable { mutableStateOf("") }
-    var category by rememberSaveable { mutableStateOf("") }
-    var name by rememberSaveable { mutableStateOf("") }
-    var username by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
-    var url by rememberSaveable { mutableStateOf("") }
-    var notes by rememberSaveable { mutableStateOf("") }
-    var favorite by rememberSaveable { mutableStateOf(false) }
+    // NOT rememberSaveable: username/password/notes are credential secrets and
+    // saved instance state is written to disk by the system. The whole form
+    // uses plain remember for consistency — rotation clears it.
+    var title by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var url by remember { mutableStateOf("") }
+    var notes by remember { mutableStateOf("") }
+    var favorite by remember { mutableStateOf(false) }
 
     LaunchedEffect(entryId) {
         if (entryId != null) {

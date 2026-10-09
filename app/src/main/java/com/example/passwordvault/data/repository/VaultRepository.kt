@@ -39,7 +39,39 @@ class VaultRepository(
     fun observeCategories(): Flow<List<String>> = dao.observeCategories()
 
     fun search(query: String): Flow<List<VaultEntrySummary>> =
-        dao.search(query).map { list -> list.map { it.toSummary() } }
+        dao.search(escapeLike(query)).map { list -> list.map { it.toSummary() } }
+
+    /**
+     * Returns id/title/url for every entry, decrypting ONLY the URL field.
+     *
+     * Autofill uses this instead of [getAllDecrypted] so a fill request never
+     * pulls passwords/usernames/notes out of the database. Callers must hold
+     * an unlocked session; if locked, [VaultLockedException] propagates and the
+     * caller should fall back to summary-only (no URL) matching.
+     */
+    fun observeUrlCandidates(): Flow<List<AutofillUrlCandidate>> =
+        dao.observeAllWithUrl().map { projections ->
+            session.withDek { dek ->
+                projections.map { p ->
+                    val aad = p.id.toByteArray(Charsets.UTF_8)
+                    val url = cipher
+                        .decrypt(dek, p.urlNonce, p.urlCipher, aad)
+                        .toString(Charsets.UTF_8)
+                    AutofillUrlCandidate(id = p.id, title = p.title, url = url)
+                }
+            }
+        }
+
+    /**
+     * Escapes LIKE wildcards so user input matches literally.
+     * The DAO query pairs this with `ESCAPE '\'`.
+     */
+    private fun escapeLike(query: String): String = buildString(query.length) {
+        for (c in query) {
+            if (c == '\\' || c == '%' || c == '_') append('\\')
+            append(c)
+        }
+    }
 
 /** Decrypts and returns a single entry. Throws [VaultLockedException] if locked. */
     suspend fun getEntry(id: String): VaultEntry? {
@@ -92,52 +124,52 @@ class VaultRepository(
         dao.replaceAll(entities)
     }
 
-    private fun encrypt(id: String, draft: VaultEntryDraft, createdAt: Long, updatedAt: Long): VaultEntryEntity {
-        val dek = session.requireDek()
-        val aad = id.toByteArray(Charsets.UTF_8)
-        val name = cipher.encrypt(dek, draft.name.toByteArray(Charsets.UTF_8), aad)
-        val username = cipher.encrypt(dek, draft.username.toByteArray(Charsets.UTF_8), aad)
-        val password = cipher.encrypt(dek, draft.password.toByteArray(Charsets.UTF_8), aad)
-        val url = cipher.encrypt(dek, draft.url.toByteArray(Charsets.UTF_8), aad)
-        val notes = cipher.encrypt(dek, draft.notes.toByteArray(Charsets.UTF_8), aad)
-        return VaultEntryEntity(
-            id = id,
-            title = draft.title,
-            category = draft.category,
-            nameCipher = name.ciphertext,
-            nameNonce = name.nonce,
-            usernameCipher = username.ciphertext,
-            usernameNonce = username.nonce,
-            passwordCipher = password.ciphertext,
-            passwordNonce = password.nonce,
-            urlCipher = url.ciphertext,
-            urlNonce = url.nonce,
-            notesCipher = notes.ciphertext,
-            notesNonce = notes.nonce,
-            createdAt = createdAt,
-            updatedAt = updatedAt,
-            favorite = draft.favorite,
-            version = 1,
-        )
-    }
+    private fun encrypt(id: String, draft: VaultEntryDraft, createdAt: Long, updatedAt: Long): VaultEntryEntity =
+        session.withDek { dek ->
+            val aad = id.toByteArray(Charsets.UTF_8)
+            val name = cipher.encrypt(dek, draft.name.toByteArray(Charsets.UTF_8), aad)
+            val username = cipher.encrypt(dek, draft.username.toByteArray(Charsets.UTF_8), aad)
+            val password = cipher.encrypt(dek, draft.password.toByteArray(Charsets.UTF_8), aad)
+            val url = cipher.encrypt(dek, draft.url.toByteArray(Charsets.UTF_8), aad)
+            val notes = cipher.encrypt(dek, draft.notes.toByteArray(Charsets.UTF_8), aad)
+            VaultEntryEntity(
+                id = id,
+                title = draft.title,
+                category = draft.category,
+                nameCipher = name.ciphertext,
+                nameNonce = name.nonce,
+                usernameCipher = username.ciphertext,
+                usernameNonce = username.nonce,
+                passwordCipher = password.ciphertext,
+                passwordNonce = password.nonce,
+                urlCipher = url.ciphertext,
+                urlNonce = url.nonce,
+                notesCipher = notes.ciphertext,
+                notesNonce = notes.nonce,
+                createdAt = createdAt,
+                updatedAt = updatedAt,
+                favorite = draft.favorite,
+                version = 1,
+            )
+        }
 
-    private fun decrypt(entity: VaultEntryEntity): VaultEntry {
-        val dek = session.requireDek()
-        val aad = entity.id.toByteArray(Charsets.UTF_8)
-        return VaultEntry(
-            id = entity.id,
-            title = entity.title,
-            category = entity.category,
-            name = cipher.decrypt(dek, entity.nameNonce, entity.nameCipher, aad).toString(Charsets.UTF_8),
-            username = cipher.decrypt(dek, entity.usernameNonce, entity.usernameCipher, aad).toString(Charsets.UTF_8),
-            password = cipher.decrypt(dek, entity.passwordNonce, entity.passwordCipher, aad).toString(Charsets.UTF_8),
-            url = cipher.decrypt(dek, entity.urlNonce, entity.urlCipher, aad).toString(Charsets.UTF_8),
-            notes = cipher.decrypt(dek, entity.notesNonce, entity.notesCipher, aad).toString(Charsets.UTF_8),
-            createdAt = entity.createdAt,
-            updatedAt = entity.updatedAt,
-            favorite = entity.favorite,
-        )
-    }
+    private fun decrypt(entity: VaultEntryEntity): VaultEntry =
+        session.withDek { dek ->
+            val aad = entity.id.toByteArray(Charsets.UTF_8)
+            VaultEntry(
+                id = entity.id,
+                title = entity.title,
+                category = entity.category,
+                name = cipher.decrypt(dek, entity.nameNonce, entity.nameCipher, aad).toString(Charsets.UTF_8),
+                username = cipher.decrypt(dek, entity.usernameNonce, entity.usernameCipher, aad).toString(Charsets.UTF_8),
+                password = cipher.decrypt(dek, entity.passwordNonce, entity.passwordCipher, aad).toString(Charsets.UTF_8),
+                url = cipher.decrypt(dek, entity.urlNonce, entity.urlCipher, aad).toString(Charsets.UTF_8),
+                notes = cipher.decrypt(dek, entity.notesNonce, entity.notesCipher, aad).toString(Charsets.UTF_8),
+                createdAt = entity.createdAt,
+                updatedAt = entity.updatedAt,
+                favorite = entity.favorite,
+            )
+        }
 
     private fun VaultEntryEntity.toSummary() = VaultEntrySummary(
         id = id,
@@ -148,3 +180,10 @@ class VaultRepository(
         updatedAt = updatedAt,
     )
 }
+
+/** Minimal non-secret candidate row used for autofill matching. */
+data class AutofillUrlCandidate(
+    val id: String,
+    val title: String,
+    val url: String,
+)

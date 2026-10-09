@@ -30,8 +30,10 @@ class BiometricManager(
 
     /** Phase 2 of enabling: wrap the DEK and persist it. */
     suspend fun completeEnable(cipher: Cipher) {
-        val dek = session.requireDek()
-        val wrapped = biometricCrypto.wrapDek(cipher, dek)
+        // withDek hands wrapDek a zeroed-after-use copy of the live DEK;
+        // the persistence below does not need key material, so it stays
+        // outside the (non-suspend) withDek scope.
+        val wrapped = session.withDek { dek -> biometricCrypto.wrapDek(cipher, dek) }
         val metadata = metadataStore.metadata.firstOrNull()
             ?: throw IllegalStateException("No vault exists")
         metadataStore.save(

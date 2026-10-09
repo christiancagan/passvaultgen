@@ -41,6 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.passwordvault.ui.components.rememberCountUp
 import com.example.passwordvault.ui.theme.brandGradient
 import java.time.LocalDate
 
@@ -75,7 +76,7 @@ fun DashboardPane(
         ) {
             StatTile(
                 label = "Weak",
-                value = stats.weak.toString(),
+                value = stats.weak,
                 icon = Icons.Filled.Warning,
                 color = MaterialTheme.colorScheme.onErrorContainer,
                 containerColor = MaterialTheme.colorScheme.errorContainer,
@@ -83,7 +84,7 @@ fun DashboardPane(
             )
             StatTile(
                 label = "Reused",
-                value = stats.reused.toString(),
+                value = stats.reused,
                 icon = Icons.Filled.ContentCopy,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
@@ -96,7 +97,7 @@ fun DashboardPane(
         ) {
             StatTile(
                 label = "Old (>180d)",
-                value = stats.old.toString(),
+                value = stats.old,
                 icon = Icons.Filled.Schedule,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -104,7 +105,7 @@ fun DashboardPane(
             )
             StatTile(
                 label = "Healthy",
-                value = (stats.total - minOf(issues, stats.total)).toString(),
+                value = stats.total - minOf(issues, stats.total),
                 icon = Icons.Filled.CheckCircle,
                 color = MaterialTheme.colorScheme.onTertiaryContainer,
                 containerColor = MaterialTheme.colorScheme.tertiaryContainer,
@@ -187,6 +188,7 @@ private fun TipCard(tip: String) {
 @Composable
 private fun HeroCard(total: Int, health: Float, averageScore: Double) {
     val scheme = MaterialTheme.colorScheme
+    val shownTotal = rememberCountUp(total)
     Card(
         shape = MaterialTheme.shapes.extraLarge,
         modifier = Modifier.fillMaxWidth(),
@@ -214,7 +216,7 @@ private fun HeroCard(total: Int, health: Float, averageScore: Double) {
                     }
                     Column(modifier = Modifier.padding(start = 16.dp)) {
                         Text(
-                            "$total",
+                            "$shownTotal",
                             style = MaterialTheme.typography.displaySmall,
                             color = scheme.onPrimary,
                         )
@@ -249,12 +251,15 @@ private fun HeroCard(total: Int, health: Float, averageScore: Double) {
 @Composable
 private fun StatTile(
     label: String,
-    value: String,
+    value: Int,
     icon: ImageVector,
     color: Color,
     containerColor: Color,
     modifier: Modifier = Modifier,
 ) {
+    // Counts up from 0 (and re-tweens when the stat changes) so the
+    // dashboard reads as live data.
+    val shownValue = rememberCountUp(value)
     Card(
         modifier = modifier,
         shape = MaterialTheme.shapes.large,
@@ -271,7 +276,7 @@ private fun StatTile(
             Icon(icon, contentDescription = null, tint = color)
             Spacer(Modifier.height(8.dp))
             Text(
-                value,
+                "$shownValue",
                 style = MaterialTheme.typography.headlineMedium,
                 color = color,
                 textAlign = TextAlign.Center,
