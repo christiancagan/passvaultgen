@@ -162,9 +162,17 @@ class BackupViewModel @Inject constructor(
                 )
             } catch (e: Exception) {
                 SecureLogger.e("import failed", e)
+                val message = e.message ?: e::class.simpleName ?: "unknown error"
+                val friendly = if (message.contains("BAD_DECRYPT", ignoreCase = true) ||
+                    message.contains("Tag mismatch", ignoreCase = true)
+                ) {
+                    "Restore failed: wrong master password or corrupted/tampered backup."
+                } else {
+                    "Restore failed: $message"
+                }
                 _uiState.value = _uiState.value.copy(
                     isBusy = false,
-                    error = "Restore failed: ${e.message ?: e::class.simpleName ?: "unknown error"}",
+                    error = friendly,
                 )
             } finally {
                 chars.fill('\u0000')
