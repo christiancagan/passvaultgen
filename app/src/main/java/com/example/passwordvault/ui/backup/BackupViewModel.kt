@@ -164,7 +164,7 @@ class BackupViewModel @Inject constructor(
                 SecureLogger.e("import failed", e)
                 _uiState.value = _uiState.value.copy(
                     isBusy = false,
-                    error = "Restore failed. The password may be incorrect or the file may be corrupted.",
+                    error = "Restore failed: ${e.message ?: e::class.simpleName ?: "unknown error"}",
                 )
             } finally {
                 chars.fill('\u0000')

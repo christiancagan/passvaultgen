@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -61,6 +62,14 @@ fun BackupScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var importPassword by remember { mutableStateOf("") }
+
+    // Redirect to the previous screen after a successful restore.
+    LaunchedEffect(uiState.message) {
+        if (uiState.message?.startsWith("Restored") == true) {
+            viewModel.clearMessage()
+            onBack()
+        }
+    }
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/octet-stream"),
@@ -266,6 +275,19 @@ fun BackupScreen(
             }
             Spacer(Modifier.height(8.dp))
         }
+    }
+
+    if (uiState.error != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.clearMessage() },
+            title = { Text("Backup error") },
+            text = { Text(uiState.error!!) },
+            confirmButton = {
+                Button(onClick = { viewModel.clearMessage() }) {
+                    Text("OK")
+                }
+            },
+        )
     }
 }
 
