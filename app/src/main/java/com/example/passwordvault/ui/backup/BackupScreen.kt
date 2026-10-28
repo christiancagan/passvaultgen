@@ -181,7 +181,8 @@ fun BackupScreen(
             ) {
                 Text(
                     "Backups are encrypted with your master password. " +
-                        "Restoring replaces all current entries.",
+                        "Restoring replaces all current entries. " +
+                        "Remember this master password: restoring this backup will require it.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                 )

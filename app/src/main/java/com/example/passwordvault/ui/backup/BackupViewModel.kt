@@ -124,7 +124,7 @@ class BackupViewModel @Inject constructor(
 
     fun onEmailHandoff(success: Boolean) {
         _uiState.value = _uiState.value.copy(
-            message = if (success) "Backup generated successfully." else null,
+            message = if (success) "Backup generated successfully. Remember the master password used to create it." else null,
             error = if (success) null else "Could not prepare the backup email.",
         )
     }
@@ -138,7 +138,7 @@ class BackupViewModel @Inject constructor(
 
     fun onExportWritten(success: Boolean) {
         _uiState.value = _uiState.value.copy(
-            message = if (success) "Backup generated successfully." else null,
+            message = if (success) "Backup generated successfully. Remember the master password used to create it." else null,
             error = if (success) null else "Could not write the backup file.",
         )
     }
