@@ -30,7 +30,7 @@ class VaultSession {
         // Toggling to false and back (the previous lock()-then-unlock sequence)
         // could make observers (e.g. navigation) react to a spurious lock during
         // backup restore, which replaced the vault metadata while unlocked.
-        dek?.fill(0)
+        this.dek?.fill(0)
         this.dek = dek.copyOf()
         _isUnlocked.value = true
     }
