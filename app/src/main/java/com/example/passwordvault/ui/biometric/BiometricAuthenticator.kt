@@ -46,7 +46,9 @@ class BiometricAuthenticator(private val activity: FragmentActivity) {
         )
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle(title)
-            .setNegativeButtonText("Use master password")
+            // No negative button: DEVICE_CREDENTIAL is allowed, which provides its
+            // own cancel affordance. Setting a negative button here throws
+            // IllegalArgumentException on some Android versions.
             .build()
         prompt.authenticate(promptInfo, BiometricPrompt.CryptoObject(cipher))
     }
