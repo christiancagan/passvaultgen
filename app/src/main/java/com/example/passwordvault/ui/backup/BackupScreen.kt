@@ -116,7 +116,7 @@ fun BackupScreen(
             val file = writeEmailBackupFile(context, bytes)
             withContext(Dispatchers.Main) {
                 if (file == null) {
-                    viewModel.onEmailHandoff(false)
+                    viewModel.onEmailError("could not write the temporary backup file")
                     return@withContext
                 }
                 val uri = FileProvider.getUriForFile(
@@ -135,12 +135,14 @@ fun BackupScreen(
                     putExtra(Intent.EXTRA_STREAM, uri)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
+                val chooser = Intent.createChooser(intent, "Send backup")
+                chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 try {
-                    emailLauncher.launch(Intent.createChooser(intent, "Send backup"))
+                    emailLauncher.launch(chooser)
                     viewModel.onEmailHandoff(true)
                 } catch (e: Exception) {
                     SecureLogger.e("email handoff failed", e)
-                    viewModel.onEmailHandoff(false)
+                    viewModel.onEmailError(e.message ?: e::class.simpleName ?: "no email app available")
                 }
             }
         }

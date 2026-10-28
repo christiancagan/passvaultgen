@@ -129,6 +129,13 @@ class BackupViewModel @Inject constructor(
         )
     }
 
+    fun onEmailError(message: String) {
+        _uiState.value = _uiState.value.copy(
+            isBusy = false,
+            error = "Email backup failed: $message",
+        )
+    }
+
     fun onExportWritten(success: Boolean) {
         _uiState.value = _uiState.value.copy(
             message = if (success) "Backup generated successfully." else null,
