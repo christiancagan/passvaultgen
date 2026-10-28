@@ -75,7 +75,14 @@ fun AppNavHost() {
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_STOP && autoLockEnabled) {
-                authViewModel.lock()
+                // The backup screen opens system file pickers (SAF), which send
+                // the app to the background and would otherwise trigger an
+                // auto-lock that tears down the backup/restore flow. Keep the
+                // vault unlocked while the user is on that screen.
+                val currentRoute = navController.currentBackStackEntry?.destination?.route
+                if (currentRoute != Routes.BACKUP) {
+                    authViewModel.lock()
+                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
