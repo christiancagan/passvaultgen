@@ -33,6 +33,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -62,12 +64,20 @@ fun BackupScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var importPassword by remember { mutableStateOf("") }
+    val importFocus = remember { FocusRequester() }
 
     // Redirect to the previous screen after a successful restore.
     LaunchedEffect(uiState.message) {
         if (uiState.message?.startsWith("Restored") == true) {
+            importPassword = ""
             viewModel.clearMessage()
             onBack()
+        }
+    }
+
+    LaunchedEffect(uiState.stagedImport) {
+        if (uiState.stagedImport != null) {
+            try { importFocus.requestFocus() } catch (_: Exception) { }
         }
     }
 
@@ -259,18 +269,33 @@ fun BackupScreen(
             }
 
             if (uiState.stagedImport != null) {
+                Text(
+                    "Enter the master password used to create this backup. " +
+                        "Restoring replaces all current entries and switches the vault to that backup's password.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 SecurePasswordField(
                     value = importPassword,
                     onValueChange = { importPassword = it },
-                    label = "Master password for this backup",
-                    modifier = Modifier.fillMaxWidth(),
+                    label = "Backup master password",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(importFocus),
                 )
                 Button(
                     onClick = { viewModel.restore(importPassword) },
                     enabled = !uiState.isBusy && importPassword.isNotEmpty(),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text("Restore (replaces current entries)")
+                    if (uiState.isBusy) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.height(18.dp),
+                            strokeWidth = 2.dp,
+                        )
+                    } else {
+                        Text("Restore (replaces current entries)")
+                    }
                 }
             }
             Spacer(Modifier.height(8.dp))
