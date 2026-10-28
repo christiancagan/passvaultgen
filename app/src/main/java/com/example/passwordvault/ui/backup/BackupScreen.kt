@@ -66,14 +66,8 @@ fun BackupScreen(
     var importPassword by remember { mutableStateOf("") }
     val importFocus = remember { FocusRequester() }
 
-    // Redirect to the previous screen after a successful restore.
-    LaunchedEffect(uiState.message) {
-        if (uiState.message?.startsWith("Restored") == true) {
-            importPassword = ""
-            viewModel.clearMessage()
-            onBack()
-        }
-    }
+    // Show a success prompt after a successful restore; OK returns to the vault.
+    // (No automatic redirect: the user acknowledges the result first.)
 
     LaunchedEffect(uiState.stagedImport) {
         if (uiState.stagedImport != null) {
@@ -312,6 +306,27 @@ fun BackupScreen(
             text = { Text(uiState.error!!) },
             confirmButton = {
                 Button(onClick = { viewModel.clearMessage() }) {
+                    Text("OK")
+                }
+            },
+        )
+    }
+
+    if (uiState.message?.startsWith("Restored") == true) {
+        AlertDialog(
+            onDismissRequest = {
+                importPassword = ""
+                viewModel.clearMessage()
+                onBack()
+            },
+            title = { Text("Restore complete") },
+            text = { Text(uiState.message!!) },
+            confirmButton = {
+                Button(onClick = {
+                    importPassword = ""
+                    viewModel.clearMessage()
+                    onBack()
+                }) {
                     Text("OK")
                 }
             },
